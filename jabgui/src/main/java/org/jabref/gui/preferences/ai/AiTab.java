@@ -15,6 +15,7 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.VBox;
 
 import org.jabref.gui.actions.ActionFactory;
@@ -51,6 +52,9 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
     @FXML private ComboBox<AiProvider> aiProviderComboBox;
     @FXML private ComboBox<String> chatModelComboBox;
     @FXML private CustomPasswordField apiKeyTextField;
+    @FXML private TextField visibleApiKeyTextField;
+    @FXML private CheckBox showApiKeyCheckbox;
+    @FXML private CheckBox rememberApiKeyCheckbox;
 
     @FXML private CheckBox customizeExpertSettingsCheckbox;
     @FXML private VBox expertSettingsPane;
@@ -131,6 +135,7 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
     private void initializeValidations() {
         Platform.runLater(() -> {
             visualizer.initVisualization(viewModel.getApiTokenValidationStatus(), apiKeyTextField);
+            visualizer.initVisualization(viewModel.getApiTokenValidationStatus(), visibleApiKeyTextField);
             visualizer.initVisualization(viewModel.getChatModelValidationStatus(), chatModelComboBox);
             visualizer.initVisualization(viewModel.getApiBaseUrlValidationStatus(), apiBaseUrlTextField);
             visualizer.initVisualization(viewModel.getEmbeddingModelValidationStatus(), embeddingModelComboBox);
@@ -213,6 +218,22 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
 
     private void initializeApiKey() {
         apiKeyTextField.textProperty().bindBidirectional(viewModel.apiKeyProperty());
+        visibleApiKeyTextField.textProperty().bindBidirectional(viewModel.apiKeyProperty());
+        visibleApiKeyTextField.visibleProperty().bind(showApiKeyCheckbox.selectedProperty());
+        visibleApiKeyTextField.managedProperty().bind(showApiKeyCheckbox.selectedProperty());
+        apiKeyTextField.visibleProperty().bind(showApiKeyCheckbox.selectedProperty().not());
+        apiKeyTextField.managedProperty().bind(showApiKeyCheckbox.selectedProperty().not());
+
+        rememberApiKeyCheckbox.selectedProperty().bindBidirectional(viewModel.rememberApiKeyProperty());
+        rememberApiKeyCheckbox.disableProperty().bind(viewModel.passwordPersistAvailable().not());
+        viewModel.passwordPersistAvailable().addListener((_, _, available) -> {
+            if (available) {
+                rememberApiKeyCheckbox.setTooltip(null);
+            } else {
+                rememberApiKeyCheckbox.setTooltip(new Tooltip(Localization.lang("Credential store not available.")));
+            }
+        });
+
         // Disable if GPT4ALL is selected
         apiKeyTextField.disableProperty().bind(
                 Bindings.or(
@@ -220,6 +241,8 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
                         aiProviderComboBox.valueProperty().isEqualTo(AiProvider.GPT4ALL)
                 )
         );
+        visibleApiKeyTextField.disableProperty().bind(apiKeyTextField.disableProperty());
+        showApiKeyCheckbox.disableProperty().bind(apiKeyTextField.disableProperty());
     }
 
     private void initializeChatModel() {

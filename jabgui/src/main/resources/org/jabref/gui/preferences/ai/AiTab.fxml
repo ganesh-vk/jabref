@@ -10,6 +10,7 @@
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
@@ -90,42 +91,51 @@
     <Label styleClass="sectionHeader"
            text="%Connection"/>
 
-    <HBox alignment="CENTER_LEFT"
-          spacing="10.0">
-        <Label alignment="BASELINE_CENTER"
-               text="%AI provider"/>
-        <ComboBox
-                fx:id="aiProviderComboBox"
-                maxWidth="1.7976931348623157E308"
-                HBox.hgrow="ALWAYS"/>
-    </HBox>
-
     <GridPane hgap="10" vgap="10">
         <columnConstraints>
+            <ColumnConstraints minWidth="120" halignment="LEFT"/>
             <ColumnConstraints halignment="LEFT"/>
             <ColumnConstraints hgrow="ALWAYS"/>
         </columnConstraints>
-        <padding>
-            <Insets left="20.0"/>
-        </padding>
+
+        <Label alignment="BASELINE_CENTER"
+               text="%AI provider"
+               GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <ComboBox
+                fx:id="aiProviderComboBox"
+                maxWidth="1.7976931348623157E308"
+                GridPane.rowIndex="0" GridPane.columnIndex="1" GridPane.columnSpan="2"/>
 
         <Label alignment="BASELINE_CENTER"
                text="%Chat model"
-               GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+               GridPane.rowIndex="1" GridPane.columnIndex="0"/>
         <ComboBox
                 fx:id="chatModelComboBox"
                 editable="true"
                 maxWidth="1.7976931348623157E308"
-                HBox.hgrow="ALWAYS"
-                GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                GridPane.rowIndex="1" GridPane.columnIndex="1" GridPane.columnSpan="2"/>
 
         <Label alignment="BASELINE_CENTER"
                text="%API key"
-               GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-        <CustomPasswordField
-                fx:id="apiKeyTextField"
-                HBox.hgrow="ALWAYS"
-                GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+               GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <StackPane GridPane.rowIndex="2" GridPane.columnIndex="1" GridPane.columnSpan="2">
+            <CustomPasswordField
+                    fx:id="apiKeyTextField"
+                    HBox.hgrow="ALWAYS"/>
+            <TextField
+                    fx:id="visibleApiKeyTextField"
+                    HBox.hgrow="ALWAYS"/>
+        </StackPane>
+        <CheckBox
+                fx:id="showApiKeyCheckbox"
+                mnemonicParsing="false"
+                text="%Show API key"
+                GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+        <CheckBox
+                fx:id="rememberApiKeyCheckbox"
+                mnemonicParsing="false"
+                text="%Remember API key"
+                GridPane.rowIndex="4" GridPane.columnIndex="1"/>
     </GridPane>
 
     <HBox alignment="BASELINE_LEFT">
