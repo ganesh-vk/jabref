@@ -16,11 +16,13 @@ import javafx.scene.control.TabPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 
 import org.jabref.gui.actions.ActionFactory;
 import org.jabref.gui.actions.StandardActions;
 import org.jabref.gui.help.HelpAction;
+import org.jabref.gui.icon.IconTheme;
 import org.jabref.gui.preferences.AbstractPreferenceTabView;
 import org.jabref.gui.preferences.PreferencesTab;
 import org.jabref.gui.util.ViewModelListCellFactory;
@@ -39,6 +41,7 @@ import org.controlsfx.control.textfield.CustomPasswordField;
 public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements PreferencesTab {
     private static final String HUGGING_FACE_CHAT_MODEL_PROMPT = "TinyLlama/TinyLlama_v1.1 (or any other model name)";
     private static final String GPT_4_ALL_CHAT_MODEL_PROMPT = "Phi-3.1-mini (or any other local model name from GPT4All)";
+    private static final String REMEMBER_API_KEY_TOOLTIP = "Save the API key to your system's credential manager for future use. If unchecked, the key is only valid for the current session.";
 
     @FXML private CheckBox enableAi;
     @FXML private CheckBox autoGenerateEmbeddings;
@@ -52,8 +55,6 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
     @FXML private ComboBox<AiProvider> aiProviderComboBox;
     @FXML private ComboBox<String> chatModelComboBox;
     @FXML private CustomPasswordField apiKeyTextField;
-    @FXML private TextField visibleApiKeyTextField;
-    @FXML private CheckBox showApiKeyCheckbox;
     @FXML private CheckBox rememberApiKeyCheckbox;
 
     @FXML private CheckBox customizeExpertSettingsCheckbox;
@@ -92,6 +93,8 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
     @FXML private Button templatesHelp;
 
     private final ControlsFxVisualizer visualizer = new ControlsFxVisualizer();
+    private String apiKeyText = "";
+    private int apiKeyCaretPosition = 0;
 
     public AiTab() {
         ViewLoader.view(this)
@@ -135,7 +138,6 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
     private void initializeValidations() {
         Platform.runLater(() -> {
             visualizer.initVisualization(viewModel.getApiTokenValidationStatus(), apiKeyTextField);
-            visualizer.initVisualization(viewModel.getApiTokenValidationStatus(), visibleApiKeyTextField);
             visualizer.initVisualization(viewModel.getChatModelValidationStatus(), chatModelComboBox);
             visualizer.initVisualization(viewModel.getApiBaseUrlValidationStatus(), apiBaseUrlTextField);
             visualizer.initVisualization(viewModel.getEmbeddingModelValidationStatus(), embeddingModelComboBox);
@@ -218,17 +220,12 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
 
     private void initializeApiKey() {
         apiKeyTextField.textProperty().bindBidirectional(viewModel.apiKeyProperty());
-        visibleApiKeyTextField.textProperty().bindBidirectional(viewModel.apiKeyProperty());
-        visibleApiKeyTextField.visibleProperty().bind(showApiKeyCheckbox.selectedProperty());
-        visibleApiKeyTextField.managedProperty().bind(showApiKeyCheckbox.selectedProperty());
-        apiKeyTextField.visibleProperty().bind(showApiKeyCheckbox.selectedProperty().not());
-        apiKeyTextField.managedProperty().bind(showApiKeyCheckbox.selectedProperty().not());
 
         rememberApiKeyCheckbox.selectedProperty().bindBidirectional(viewModel.rememberApiKeyProperty());
         rememberApiKeyCheckbox.disableProperty().bind(viewModel.passwordPersistAvailable().not());
         viewModel.passwordPersistAvailable().addListener((_, _, available) -> {
             if (available) {
-                rememberApiKeyCheckbox.setTooltip(null);
+                rememberApiKeyCheckbox.setTooltip(new Tooltip(Localization.lang(REMEMBER_API_KEY_TOOLTIP)));
             } else {
                 rememberApiKeyCheckbox.setTooltip(new Tooltip(Localization.lang("Credential store not available.")));
             }
@@ -241,8 +238,11 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
                         aiProviderComboBox.valueProperty().isEqualTo(AiProvider.GPT4ALL)
                 )
         );
-        visibleApiKeyTextField.disableProperty().bind(apiKeyTextField.disableProperty());
-        showApiKeyCheckbox.disableProperty().bind(apiKeyTextField.disableProperty());
+
+        apiKeyTextField.setRight(IconTheme.JabRefIcons.PASSWORD_REVEALED.getGraphicNode());
+        apiKeyTextField.getRight().addEventFilter(MouseEvent.MOUSE_PRESSED, this::apiKeyReveal);
+        apiKeyTextField.getRight().addEventFilter(MouseEvent.MOUSE_RELEASED, this::apiKeyMask);
+        apiKeyTextField.getRight().addEventFilter(MouseEvent.MOUSE_EXITED, this::apiKeyMask);
     }
 
     private void initializeChatModel() {
@@ -303,6 +303,23 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
     @FXML
     private void onResetCurrentTemplateButtonClick() {
         viewModel.resetCurrentTemplate();
+    }
+
+    private void apiKeyReveal(MouseEvent event) {
+        apiKeyText = apiKeyTextField.getText();
+        apiKeyCaretPosition = apiKeyTextField.getCaretPosition();
+        apiKeyTextField.clear();
+        apiKeyTextField.setPromptText(apiKeyText);
+    }
+
+    private void apiKeyMask(MouseEvent event) {
+        if (!apiKeyText.isEmpty()) {
+            apiKeyTextField.setText(apiKeyText);
+            apiKeyTextField.positionCaret(apiKeyCaretPosition);
+            apiKeyTextField.setPromptText("");
+            apiKeyText = "";
+            apiKeyCaretPosition = 0;
+        }
     }
 
     public ReadOnlyBooleanProperty aiEnabledProperty() {

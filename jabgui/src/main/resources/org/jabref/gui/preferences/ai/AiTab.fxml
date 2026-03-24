@@ -10,7 +10,7 @@
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
@@ -118,24 +118,19 @@
         <Label alignment="BASELINE_CENTER"
                text="%API key"
                GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-        <StackPane GridPane.rowIndex="2" GridPane.columnIndex="1" GridPane.columnSpan="2">
-            <CustomPasswordField
-                    fx:id="apiKeyTextField"
-                    HBox.hgrow="ALWAYS"/>
-            <TextField
-                    fx:id="visibleApiKeyTextField"
-                    HBox.hgrow="ALWAYS"/>
-        </StackPane>
-        <CheckBox
-                fx:id="showApiKeyCheckbox"
-                mnemonicParsing="false"
-                text="%Show API Key"
-                GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+        <CustomPasswordField
+                fx:id="apiKeyTextField"
+                maxWidth="1.7976931348623157E308"
+                GridPane.rowIndex="2" GridPane.columnIndex="1" GridPane.columnSpan="2"/>
         <CheckBox
                 fx:id="rememberApiKeyCheckbox"
                 mnemonicParsing="false"
-                text="%Remember API Key"
-                GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+                text="%Persist API key across sessions"
+                GridPane.rowIndex="3" GridPane.columnIndex="1">
+            <tooltip>
+                <Tooltip text="%Save the API key to your system's credential manager for future use. If unchecked, the key is only valid for the current session."/>
+            </tooltip>
+        </CheckBox>
     </GridPane>
 
     <HBox alignment="BASELINE_LEFT">
