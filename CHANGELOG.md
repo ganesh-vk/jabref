@@ -41,6 +41,7 @@ Note that this project **does not** adhere to [Semantic Versioning](https://semv
 ### Fixed
 
 - We removed deprecated Gemini Models from the AI chat model selection and replaced them with current offerings. [#15398](https://github.com/JabRef/jabref/issues/15398)
+- We fixed the ScienceDirect fulltext fetcher not returning a PDF when the Elsevier API response includes a direct PDF link. [#12161](https://github.com/JabRef/jabref/issues/12161)
 - We fixed vertical cursor movement shortcuts (Command+Up/Down for document start/end, Option+Up/Down for paragraph start/end) not working correctly in the BibTeX source editor on macOS. [#5937](https://github.com/JabRef/jabref/issues/5937)
 - We fixed text cursor movement shortcuts (Command+Left/Right for line start/end, Option+Left/Right for word navigation) not working correctly in the BibTeX source editor on macOS. [#5937](https://github.com/JabRef/jabref/issues/5937)
 - We fixed PDF import to prefer the content extracted title over filename like XMP metadata titles. [#11999](https://github.com/JabRef/jabref/issues/11999)
