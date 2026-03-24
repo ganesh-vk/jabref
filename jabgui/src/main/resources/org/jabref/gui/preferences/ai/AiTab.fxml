@@ -129,12 +129,12 @@
         <CheckBox
                 fx:id="showApiKeyCheckbox"
                 mnemonicParsing="false"
-                text="%Show API key"
+                text="%Show API Key"
                 GridPane.rowIndex="3" GridPane.columnIndex="1"/>
         <CheckBox
                 fx:id="rememberApiKeyCheckbox"
                 mnemonicParsing="false"
-                text="%Remember API key"
+                text="%Remember API Key"
                 GridPane.rowIndex="4" GridPane.columnIndex="1"/>
     </GridPane>
 
