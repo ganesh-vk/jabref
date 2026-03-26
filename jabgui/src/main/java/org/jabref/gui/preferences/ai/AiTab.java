@@ -16,7 +16,6 @@ import javafx.scene.control.TabPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 
 import org.jabref.gui.actions.ActionFactory;
@@ -33,10 +32,10 @@ import org.jabref.model.ai.AiProvider;
 import org.jabref.model.ai.EmbeddingModel;
 
 import com.airhacks.afterburner.views.ViewLoader;
+import com.dlsc.gemsfx.EnhancedPasswordField;
 import com.dlsc.unitfx.IntegerInputField;
 import de.saxsys.mvvmfx.utils.validation.visualization.ControlsFxVisualizer;
 import org.controlsfx.control.SearchableComboBox;
-import org.controlsfx.control.textfield.CustomPasswordField;
 
 public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements PreferencesTab {
     private static final String HUGGING_FACE_CHAT_MODEL_PROMPT = "TinyLlama/TinyLlama_v1.1 (or any other model name)";
@@ -54,7 +53,7 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
 
     @FXML private ComboBox<AiProvider> aiProviderComboBox;
     @FXML private ComboBox<String> chatModelComboBox;
-    @FXML private CustomPasswordField apiKeyTextField;
+    @FXML private EnhancedPasswordField apiKeyTextField;
     @FXML private CheckBox rememberApiKeyCheckbox;
 
     @FXML private CheckBox customizeExpertSettingsCheckbox;
@@ -240,9 +239,9 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
         );
 
         apiKeyTextField.setRight(IconTheme.JabRefIcons.PASSWORD_REVEALED.getGraphicNode());
-        apiKeyTextField.getRight().addEventFilter(MouseEvent.MOUSE_PRESSED, this::apiKeyReveal);
-        apiKeyTextField.getRight().addEventFilter(MouseEvent.MOUSE_RELEASED, this::apiKeyMask);
-        apiKeyTextField.getRight().addEventFilter(MouseEvent.MOUSE_EXITED, this::apiKeyMask);
+        apiKeyTextField.setOnMouseClicked(event ->
+                apiKeyTextField.setShowPassword(!apiKeyTextField.isShowPassword())
+        );
     }
 
     private void initializeChatModel() {
@@ -303,23 +302,6 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
     @FXML
     private void onResetCurrentTemplateButtonClick() {
         viewModel.resetCurrentTemplate();
-    }
-
-    private void apiKeyReveal(MouseEvent event) {
-        apiKeyText = apiKeyTextField.getText();
-        apiKeyCaretPosition = apiKeyTextField.getCaretPosition();
-        apiKeyTextField.clear();
-        apiKeyTextField.setPromptText(apiKeyText);
-    }
-
-    private void apiKeyMask(MouseEvent event) {
-        if (!apiKeyText.isEmpty()) {
-            apiKeyTextField.setText(apiKeyText);
-            apiKeyTextField.positionCaret(apiKeyCaretPosition);
-            apiKeyTextField.setPromptText("");
-            apiKeyText = "";
-            apiKeyCaretPosition = 0;
-        }
     }
 
     public ReadOnlyBooleanProperty aiEnabledProperty() {
