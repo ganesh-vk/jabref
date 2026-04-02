@@ -144,7 +144,7 @@ public class LinkedFileHandler {
                 LOGGER.debug("The file {} would have been copied/moved to {}. However, there exists already a file with that name so we do nothing.", sourcePath, targetPath);
                 return new GetTargetPathResult(true, false, targetPath);
             }
-            Integer count = 1;
+            int count = 1;
             boolean exists = false;
             // @formatter:off
             do {

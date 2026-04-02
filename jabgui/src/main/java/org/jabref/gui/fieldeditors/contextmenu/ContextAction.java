@@ -126,9 +126,9 @@ public class ContextAction extends SimpleCommand {
             case RENAME_FILE_TO_NAME ->
                     linkedFile.askForNameAndRename();
             case MOVE_FILE_TO_FOLDER ->
-                    linkedFile.moveToNextPossibleDirectory();
+                    linkedFile.moveToNextConfiguredFileDirectory();
             case MOVE_FILE_TO_FOLDER_AND_RENAME ->
-                    linkedFile.moveToDefaultDirectoryAndRename();
+                    linkedFile.moveToNextConfiguredFileDirectoryAndRename();
             case DELETE_FILE ->
                     viewModel.deleteFile(linkedFile);
             case REMOVE_LINK,

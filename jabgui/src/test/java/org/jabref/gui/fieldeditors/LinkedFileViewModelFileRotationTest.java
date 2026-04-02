@@ -100,7 +100,7 @@ class LinkedFileViewModelFileRotationTest {
 
         LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
 
-        viewModel.moveToNextPossibleDirectory();
+        viewModel.moveToNextConfiguredFileDirectory();
 
         assertTrue(Files.exists(targetDirectory.resolve("test.pdf")));
         assertFalse(Files.exists(fileInSource));
@@ -117,7 +117,7 @@ class LinkedFileViewModelFileRotationTest {
 
         LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
 
-        viewModel.moveToNextPossibleDirectory();
+        viewModel.moveToNextConfiguredFileDirectory();
         assertTrue(Files.exists(bibDir.resolve("test.pdf")));
         assertFalse(Files.exists(fileInUser));
     }
@@ -133,7 +133,7 @@ class LinkedFileViewModelFileRotationTest {
 
         LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
 
-        viewModel.moveToNextPossibleDirectory();
+        viewModel.moveToNextConfiguredFileDirectory();
 
         verify(dialogService).showErrorDialogAndWait(
                 eq(Localization.lang("No directory found")),
@@ -153,7 +153,7 @@ class LinkedFileViewModelFileRotationTest {
 
         LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
 
-        viewModel.moveToNextPossibleDirectory();
+        viewModel.moveToNextConfiguredFileDirectory();
 
         verify(dialogService).showErrorDialogAndWait(
                 eq(Localization.lang("No directory found")),
@@ -176,7 +176,7 @@ class LinkedFileViewModelFileRotationTest {
 
         LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
 
-        viewModel.moveToNextPossibleDirectory();
+        viewModel.moveToNextConfiguredFileDirectory();
         assertTrue(Files.exists(userDir.resolve("test.pdf")));
         assertFalse(Files.exists(fileRandom));
     }
@@ -194,7 +194,7 @@ class LinkedFileViewModelFileRotationTest {
 
         LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
 
-        viewModel.moveToNextPossibleDirectory();
+        viewModel.moveToNextConfiguredFileDirectory();
 
         assertTrue(Files.exists(libDir.resolve("x/y/z/test.pdf")));
         assertFalse(Files.exists(userDir.resolve("x/y/z/test.pdf")));
@@ -213,7 +213,7 @@ class LinkedFileViewModelFileRotationTest {
 
         LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
 
-        viewModel.moveToNextPossibleDirectory();
+        viewModel.moveToNextConfiguredFileDirectory();
 
         assertTrue(Files.exists(userDir.resolve("test.pdf")));
         assertFalse(Files.exists(userDir.resolve("x/y/z/test.pdf")));
@@ -235,7 +235,7 @@ class LinkedFileViewModelFileRotationTest {
 
         LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
 
-        viewModel.moveToNextPossibleDirectory();
+        viewModel.moveToNextConfiguredFileDirectory();
 
         Path movedFile = libDir.resolve(targetDirectoryName).resolve("x/y/test.pdf");
         assertTrue(Files.exists(movedFile));
@@ -259,7 +259,7 @@ class LinkedFileViewModelFileRotationTest {
 
         LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
 
-        viewModel.moveToNextPossibleDirectory();
+        viewModel.moveToNextConfiguredFileDirectory();
 
         Path movedFile = libDir.resolve("papers/test.pdf");
         assertTrue(Files.exists(movedFile));
@@ -280,6 +280,23 @@ class LinkedFileViewModelFileRotationTest {
 
         LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
 
-        assertDoesNotThrow(viewModel::moveToNextPossibleDirectory);
+        assertDoesNotThrow(viewModel::moveToNextConfiguredFileDirectory);
+    }
+
+    @Test
+    void moveToNextSkipsDuplicateConfiguredDirectories() throws IOException {
+        FileDirectories dirs = new FileDirectories(Optional.of(userDir), Optional.of(userDir), Optional.of(bibDir));
+        when(databaseContext.getAllFileDirectories(any())).thenReturn(dirs);
+
+        Path fileInUser = userDir.resolve("test.pdf");
+        Files.createFile(fileInUser);
+        LinkedFile linkedFile = new LinkedFile("desc", fileInUser, "pdf");
+
+        LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
+
+        viewModel.moveToNextConfiguredFileDirectory();
+
+        assertTrue(Files.exists(bibDir.resolve("test.pdf")));
+        assertFalse(Files.exists(fileInUser));
     }
 }
