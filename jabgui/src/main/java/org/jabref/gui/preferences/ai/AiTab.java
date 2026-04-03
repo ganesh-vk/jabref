@@ -38,9 +38,6 @@ import de.saxsys.mvvmfx.utils.validation.visualization.ControlsFxVisualizer;
 import org.controlsfx.control.SearchableComboBox;
 
 public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements PreferencesTab {
-    private static final String HUGGING_FACE_CHAT_MODEL_PROMPT = "TinyLlama/TinyLlama_v1.1 (or any other model name)";
-    private static final String GPT_4_ALL_CHAT_MODEL_PROMPT = "Phi-3.1-mini (or any other local model name from GPT4All)";
-    private static final String REMEMBER_API_KEY_TOOLTIP = "Save the API key to your system's credential manager for future use. If unchecked, the key is only valid for the current session.";
 
     @FXML private CheckBox enableAi;
     @FXML private CheckBox autoGenerateEmbeddings;
@@ -92,8 +89,6 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
     @FXML private Button templatesHelp;
 
     private final ControlsFxVisualizer visualizer = new ControlsFxVisualizer();
-    private String apiKeyText = "";
-    private int apiKeyCaretPosition = 0;
 
     public AiTab() {
         ViewLoader.view(this)
@@ -224,7 +219,7 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
         rememberApiKeyCheckbox.disableProperty().bind(viewModel.passwordPersistAvailable().not());
         viewModel.passwordPersistAvailable().addListener((_, _, available) -> {
             if (available) {
-                rememberApiKeyCheckbox.setTooltip(new Tooltip(Localization.lang(REMEMBER_API_KEY_TOOLTIP)));
+                rememberApiKeyCheckbox.setTooltip(new Tooltip(Localization.lang("Save the API key to your system's credential manager for future use. If unchecked, the key is only valid for the current session.")));
             } else {
                 rememberApiKeyCheckbox.setTooltip(new Tooltip(Localization.lang("Credential store not available.")));
             }
@@ -254,10 +249,10 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
 
         this.aiProviderComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue == AiProvider.HUGGING_FACE) {
-                chatModelComboBox.setPromptText(HUGGING_FACE_CHAT_MODEL_PROMPT);
+                chatModelComboBox.setPromptText("TinyLlama/TinyLlama_v1.1 (or any other model name)");
             }
             if (newValue == AiProvider.GPT4ALL) {
-                chatModelComboBox.setPromptText(GPT_4_ALL_CHAT_MODEL_PROMPT);
+                chatModelComboBox.setPromptText("Phi-3.1-mini (or any other local model name from GPT4All)");
             }
         });
     }
