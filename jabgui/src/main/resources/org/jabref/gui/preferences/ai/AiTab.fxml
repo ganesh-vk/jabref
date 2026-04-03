@@ -136,17 +136,6 @@
                 GridPane.rowIndex="2"
                 GridPane.columnIndex="1"
                 GridPane.columnSpan="2"/>
-        <CheckBox
-                fx:id="rememberApiKeyCheckbox"
-                mnemonicParsing="false"
-                text="%Persist API key across sessions"
-                GridPane.rowIndex="3"
-                GridPane.columnIndex="1">
-            <tooltip>
-                <Tooltip
-                        text="%Save the API key to your system's credential manager for future use. If unchecked, the key is only valid for the current session."/>
-            </tooltip>
-        </CheckBox>
     </GridPane>
 
     <HBox alignment="BASELINE_LEFT">

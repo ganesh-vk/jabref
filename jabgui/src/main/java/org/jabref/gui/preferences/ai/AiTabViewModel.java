@@ -27,7 +27,6 @@ import org.jabref.logic.ai.models.AiModelService;
 import org.jabref.logic.ai.models.FetchAiModelsBackgroundTask;
 import org.jabref.logic.ai.templates.AiTemplate;
 import org.jabref.logic.l10n.Localization;
-import org.jabref.logic.os.OS;
 import org.jabref.logic.preferences.CliPreferences;
 import org.jabref.logic.util.LocalizedNumbers;
 import org.jabref.logic.util.OptionalObjectProperty;
@@ -80,8 +79,6 @@ public class AiTabViewModel implements PreferenceTabViewModel {
     private final StringProperty huggingFaceApiKey = new SimpleStringProperty();
     private final StringProperty gpt4AllApiKey = new SimpleStringProperty();
 
-    private final BooleanProperty rememberApiKey = new SimpleBooleanProperty();
-    private final BooleanProperty passwordPersistAvailable = new SimpleBooleanProperty();
     private final BooleanProperty customizeExpertSettings = new SimpleBooleanProperty();
 
     private final ListProperty<EmbeddingModel> embeddingModelsList =
@@ -345,9 +342,6 @@ public class AiTabViewModel implements PreferenceTabViewModel {
         huggingFaceApiKey.setValue(aiPreferences.getApiKeyForAiProvider(AiProvider.HUGGING_FACE));
         gpt4AllApiKey.setValue(aiPreferences.getApiKeyForAiProvider(AiProvider.GPT4ALL));
 
-        rememberApiKey.setValue(aiPreferences.getRememberApiKey());
-        passwordPersistAvailable.setValue(OS.isKeyringAvailable());
-
         openAiApiBaseUrl.setValue(aiPreferences.getOpenAiApiBaseUrl());
         mistralAiApiBaseUrl.setValue(aiPreferences.getMistralAiApiBaseUrl());
         geminiApiBaseUrl.setValue(aiPreferences.getGeminiApiBaseUrl());
@@ -399,8 +393,6 @@ public class AiTabViewModel implements PreferenceTabViewModel {
         aiPreferences.setHuggingFaceChatModel(huggingFaceChatModel.get() == null ? "" : huggingFaceChatModel.get());
         aiPreferences.setGpt4AllChatModel(gpt4AllChatModel.get() == null ? "" : gpt4AllChatModel.get());
 
-        aiPreferences.setRememberApiKey(rememberApiKey.get());
-        // We check the rememberApiKey boolean inside the storeAiApiKeyInKeyring method and not over here
         aiPreferences.storeAiApiKeyInKeyring(AiProvider.OPEN_AI, openAiApiKey.get() == null ? "" : openAiApiKey.get());
         aiPreferences.storeAiApiKeyInKeyring(AiProvider.MISTRAL_AI, mistralAiApiKey.get() == null ? "" : mistralAiApiKey.get());
         aiPreferences.storeAiApiKeyInKeyring(AiProvider.GEMINI, geminiAiApiKey.get() == null ? "" : geminiAiApiKey.get());
@@ -594,14 +586,6 @@ public class AiTabViewModel implements PreferenceTabViewModel {
 
     public StringProperty apiKeyProperty() {
         return currentApiKey;
-    }
-
-    public BooleanProperty rememberApiKeyProperty() {
-        return rememberApiKey;
-    }
-
-    public BooleanProperty passwordPersistAvailable() {
-        return passwordPersistAvailable;
     }
 
     public BooleanProperty customizeExpertSettingsProperty() {

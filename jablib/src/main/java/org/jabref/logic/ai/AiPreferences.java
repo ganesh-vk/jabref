@@ -46,7 +46,6 @@ public class AiPreferences {
     private final StringProperty huggingFaceChatModel;
     private final StringProperty gpt4AllChatModel;
 
-    private final BooleanProperty rememberApiKey;
     private final BooleanProperty customizeExpertSettings;
 
     private final StringProperty openAiApiBaseUrl;
@@ -78,7 +77,6 @@ public class AiPreferences {
                          String geminiChatModel,
                          String huggingFaceChatModel,
                          String gpt4AllModel,
-                         boolean rememberApiKey,
                          boolean customizeExpertSettings,
                          String openAiApiBaseUrl,
                          String mistralAiApiBaseUrl,
@@ -108,7 +106,6 @@ public class AiPreferences {
         this.huggingFaceChatModel = new SimpleStringProperty(huggingFaceChatModel);
         this.gpt4AllChatModel = new SimpleStringProperty(gpt4AllModel);
 
-        this.rememberApiKey = new SimpleBooleanProperty(rememberApiKey);
         this.customizeExpertSettings = new SimpleBooleanProperty(customizeExpertSettings);
 
         this.openAiApiBaseUrl = new SimpleStringProperty(openAiApiBaseUrl);
@@ -142,10 +139,6 @@ public class AiPreferences {
     }
 
     public String getApiKeyForAiProvider(AiProvider aiProvider) {
-        if (!getRememberApiKey()) {
-            return "";
-        }
-
         try (final Keyring keyring = Keyring.create()) {
             return keyring.getPassword(KEYRING_AI_SERVICE, KEYRING_AI_SERVICE_ACCOUNT + "-" + aiProvider.name());
         } catch (PasswordAccessException e) {
@@ -159,7 +152,7 @@ public class AiPreferences {
 
     public void storeAiApiKeyInKeyring(AiProvider aiProvider, String newKey) {
         try (final Keyring keyring = Keyring.create()) {
-            if (!getRememberApiKey() || StringUtil.isNullOrEmpty(newKey)) {
+            if (StringUtil.isNullOrEmpty(newKey)) {
                 try {
                     keyring.deletePassword(KEYRING_AI_SERVICE, KEYRING_AI_SERVICE_ACCOUNT + "-" + aiProvider.name());
                 } catch (PasswordAccessException ex) {
@@ -170,12 +163,6 @@ public class AiPreferences {
             }
         } catch (Exception e) {
             LOGGER.warn("JabRef could not open keyring for storing {} API token", aiProvider.getLabel(), e);
-        }
-    }
-
-    public void deleteStoredApiKeys() {
-        for (AiProvider aiProvider : AiProvider.values()) {
-            storeAiApiKeyInKeyring(aiProvider, "");
         }
     }
 
@@ -309,18 +296,6 @@ public class AiPreferences {
 
     public void setGpt4AllChatModel(String gpt4AllChatModel) {
         this.gpt4AllChatModel.set(gpt4AllChatModel);
-    }
-
-    public BooleanProperty rememberApiKeyProperty() {
-        return rememberApiKey;
-    }
-
-    public boolean getRememberApiKey() {
-        return rememberApiKey.get();
-    }
-
-    public void setRememberApiKey(boolean rememberApiKey) {
-        this.rememberApiKey.set(rememberApiKey);
     }
 
     public BooleanProperty customizeExpertSettingsProperty() {

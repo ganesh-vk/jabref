@@ -382,7 +382,6 @@ public class JabRefCliPreferences implements CliPreferences {
     private static final String AI_GEMINI_CHAT_MODEL = "aiGeminiChatModel";
     private static final String AI_HUGGING_FACE_CHAT_MODEL = "aiHuggingFaceChatModel";
     private static final String AI_GPT_4_ALL_MODEL = "aiGpt4AllChatModel";
-    private static final String AI_REMEMBER_API_KEY = "aiRememberApiKey";
     private static final String AI_CUSTOMIZE_SETTINGS = "aiCustomizeSettings";
     private static final String AI_EMBEDDING_MODEL = "aiEmbeddingModel";
     private static final String AI_OPEN_AI_API_BASE_URL = "aiOpenAiApiBaseUrl";
@@ -712,7 +711,6 @@ public class JabRefCliPreferences implements CliPreferences {
         defaults.put(AI_GEMINI_CHAT_MODEL, AiDefaultPreferences.CHAT_MODELS.get(AiProvider.GEMINI).getName());
         defaults.put(AI_HUGGING_FACE_CHAT_MODEL, AiDefaultPreferences.CHAT_MODELS.get(AiProvider.HUGGING_FACE).getName());
         defaults.put(AI_GPT_4_ALL_MODEL, AiDefaultPreferences.CHAT_MODELS.get(AiProvider.GPT4ALL).getName());
-        defaults.put(AI_REMEMBER_API_KEY, Boolean.TRUE);
         defaults.put(AI_CUSTOMIZE_SETTINGS, AiDefaultPreferences.CUSTOMIZE_SETTINGS);
         defaults.put(AI_EMBEDDING_MODEL, AiDefaultPreferences.EMBEDDING_MODEL.name());
         defaults.put(AI_OPEN_AI_API_BASE_URL, AiProvider.OPEN_AI.getApiUrl());
@@ -1961,7 +1959,6 @@ public class JabRefCliPreferences implements CliPreferences {
                 get(AI_GEMINI_CHAT_MODEL),
                 get(AI_HUGGING_FACE_CHAT_MODEL),
                 get(AI_GPT_4_ALL_MODEL),
-                getBoolean(AI_REMEMBER_API_KEY),
                 getBoolean(AI_CUSTOMIZE_SETTINGS),
                 get(AI_OPEN_AI_API_BASE_URL),
                 get(AI_MISTRAL_AI_API_BASE_URL),
@@ -2000,12 +1997,6 @@ public class JabRefCliPreferences implements CliPreferences {
         EasyBind.listen(aiPreferences.geminiChatModelProperty(), (_, _, newValue) -> put(AI_GEMINI_CHAT_MODEL, newValue));
         EasyBind.listen(aiPreferences.huggingFaceChatModelProperty(), (_, _, newValue) -> put(AI_HUGGING_FACE_CHAT_MODEL, newValue));
         EasyBind.listen(aiPreferences.gpt4AllChatModelProperty(), (_, _, newValue) -> put(AI_GPT_4_ALL_MODEL, newValue));
-        EasyBind.listen(aiPreferences.rememberApiKeyProperty(), (_, _, newValue) -> {
-            putBoolean(AI_REMEMBER_API_KEY, newValue);
-            if (!newValue) {
-                aiPreferences.deleteStoredApiKeys();
-            }
-        });
 
         EasyBind.listen(aiPreferences.customizeExpertSettingsProperty(), (_, _, newValue) -> putBoolean(AI_CUSTOMIZE_SETTINGS, newValue));
 

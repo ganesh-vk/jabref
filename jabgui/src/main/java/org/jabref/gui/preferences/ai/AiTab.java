@@ -15,7 +15,7 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.control.Tooltip;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import org.jabref.gui.actions.ActionFactory;
@@ -51,7 +51,6 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
     @FXML private ComboBox<AiProvider> aiProviderComboBox;
     @FXML private ComboBox<String> chatModelComboBox;
     @FXML private EnhancedPasswordField apiKeyTextField;
-    @FXML private CheckBox rememberApiKeyCheckbox;
 
     @FXML private CheckBox customizeExpertSettingsCheckbox;
     @FXML private VBox expertSettingsPane;
@@ -215,16 +214,6 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
     private void initializeApiKey() {
         apiKeyTextField.textProperty().bindBidirectional(viewModel.apiKeyProperty());
 
-        rememberApiKeyCheckbox.selectedProperty().bindBidirectional(viewModel.rememberApiKeyProperty());
-        rememberApiKeyCheckbox.disableProperty().bind(viewModel.passwordPersistAvailable().not());
-        viewModel.passwordPersistAvailable().addListener((_, _, available) -> {
-            if (available) {
-                rememberApiKeyCheckbox.setTooltip(new Tooltip(Localization.lang("Save the API key to your system's credential manager for future use. If unchecked, the key is only valid for the current session.")));
-            } else {
-                rememberApiKeyCheckbox.setTooltip(new Tooltip(Localization.lang("Credential store not available.")));
-            }
-        });
-
         // Disable if GPT4ALL is selected
         apiKeyTextField.disableProperty().bind(
                 Bindings.or(
@@ -233,10 +222,18 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
                 )
         );
 
-        apiKeyTextField.setRight(IconTheme.JabRefIcons.PASSWORD_REVEALED.getGraphicNode());
-        apiKeyTextField.setOnMouseClicked(event ->
-                apiKeyTextField.setShowPassword(!apiKeyTextField.isShowPassword())
-        );
+        Button revealApiKeyButton = IconTheme.JabRefIcons.PASSWORD_REVEALED.asButton();
+        revealApiKeyButton.disableProperty().bind(apiKeyTextField.disableProperty());
+        revealApiKeyButton.setOnAction(_ -> apiKeyTextField.setShowPassword(!apiKeyTextField.isShowPassword()));
+
+        Button clearApiKeyButton = IconTheme.JabRefIcons.DELETE_ENTRY.asButton();
+        clearApiKeyButton.disableProperty().bind(apiKeyTextField.disableProperty());
+        clearApiKeyButton.setOnAction(_ -> {
+            apiKeyTextField.clear();
+            apiKeyTextField.requestFocus();
+        });
+
+        apiKeyTextField.setRight(new HBox(revealApiKeyButton, clearApiKeyButton));
     }
 
     private void initializeChatModel() {
@@ -249,10 +246,10 @@ public class AiTab extends AbstractPreferenceTabView<AiTabViewModel> implements 
 
         this.aiProviderComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue == AiProvider.HUGGING_FACE) {
-                chatModelComboBox.setPromptText("TinyLlama/TinyLlama_v1.1 (or any other model name)");
+                chatModelComboBox.setPromptText(Localization.lang("TinyLlama/TinyLlama_v1.1 (or any other model name)"));
             }
             if (newValue == AiProvider.GPT4ALL) {
-                chatModelComboBox.setPromptText("Phi-3.1-mini (or any other local model name from GPT4All)");
+                chatModelComboBox.setPromptText(Localization.lang("Phi-3.1-mini (or any other local model name from GPT4All)"));
             }
         });
     }
