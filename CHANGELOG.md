@@ -26,6 +26,7 @@ Note that this project **does not** adhere to [Semantic Versioning](https://semv
 
 ### Changed
 
+- We changed CSL reference format by adding citation type at the end.  [#15370](https://github.com/JabRef/jabref/issues/15370) [#15434](https://github.com/JabRef/jabref/issues/15434)
 - We changed the groups filter field to use a filter icon. [#15402](https://github.com/JabRef/jabref/issues/15402)
 - We improved the MultiMergeEntries dialog to automatically select the most plausible field value when merging entries (e.g. a more specific date). [#15027](https://github.com/JabRef/jabref/issues/15027)
 - We removed the restart prompt when accepting Mr. DLib privacy settings or hiding the Related articles tab in the entry editor. [#15195](https://github.com/JabRef/jabref/issues/15195)
@@ -39,10 +40,12 @@ Note that this project **does not** adhere to [Semantic Versioning](https://semv
 - We enabled drag and drop of Windows shortcut (`.lnk`) files to open libraries. [#15036](https://github.com/JabRef/jabref/issues/15036)
 - We refined the "Select files to import" page in "Search for unlinked local files" dialog to give the users the choice of linking the file to a related entry or import it to a new entry. [#13689](https://github.com/JabRef/jabref/issues/13689)
 - The "Make/Sync bibliography" button in OO/LO panel now refreshes citations before generating bibliographies. [#14387](https://github.com/JabRef/jabref/issues/14387)
+- Improved responsiveness and user interface of refresh button in Citation Relations tab. [#12247](https://github.com/JabRef/jabref/issues/12247)
 
 ### Fixed
 
 - We removed deprecated Gemini Models from the AI chat model selection and replaced them with current offerings. [#15398](https://github.com/JabRef/jabref/issues/15398)
+- We fixed an issue where entries were being deselected after entering a BibTeX source and clicking elsewhere. [#15412](https://github.com/JabRef/jabref/issues/15412)
 - We fixed pages checker to allow suffix letters in the page range like "436S-439S". [#13701](https://github.com/JabRef/jabref/issues/13701)
 - We fixed an issue where the Web search table had extra space, to improve the layout. [#14556](https://github.com/JabRef/jabref/issues/14556)
 - We fixed an issue where the side pane (Groups/Web search) width was not remembered after restarting JabRef. [#8907](https://github.com/JabRef/jabref/issues/8907)
