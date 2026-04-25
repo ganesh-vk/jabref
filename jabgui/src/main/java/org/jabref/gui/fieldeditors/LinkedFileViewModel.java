@@ -365,8 +365,7 @@ public class LinkedFileViewModel extends AbstractViewModel {
 
         Path destDirectoryWithPattern = getFullDestinationDirectory(destinationDirectory);
         try {
-            Files.isSameFile(currentDirectory.get(), destDirectoryWithPattern);
-            return true;
+            return Files.isSameFile(currentDirectory.get(), destDirectoryWithPattern);
         } catch (IOException e) {
             LOGGER.debug("Could not compare directories {} and {}.", currentDirectory.get(), destDirectoryWithPattern, e);
             return false;
