@@ -53,6 +53,17 @@ class ContextActionTest {
     }
 
     @Test
+    void shouldBeExecutableForRenameToNameWhenOnlyFilenameDiffers() {
+        LinkedFileViewModel fileViewModel = mockOfflineExistingFileViewModel();
+        when(fileViewModel.isGeneratedPathSameAsOriginal()).thenReturn(true);
+        when(fileViewModel.isGeneratedNameSameAsOriginal()).thenReturn(false);
+
+        ContextAction action = newAction(StandardActions.RENAME_FILE_TO_NAME, fileViewModel);
+
+        assertTrue(action.isExecutable());
+    }
+
+    @Test
     void shouldBeExecutableForDownloadWhenFileIsOnlineLink() {
         LinkedFileViewModel fileViewModel = mockOnlineLinkViewModel("https://host/resource.pdf");
         ContextAction action = newAction(StandardActions.DOWNLOAD_FILE, fileViewModel);
@@ -138,26 +149,6 @@ class ContextActionTest {
         action.execute();
 
         verify(fileViewModel).askForNameAndRename();
-    }
-
-    @Test
-    void shouldExecuteMoveToDefaultDirectory() {
-        LinkedFileViewModel fileViewModel = mockOfflineExistingFileViewModel();
-        ContextAction action = newAction(StandardActions.MOVE_FILE_TO_FOLDER, fileViewModel);
-
-        action.execute();
-
-        verify(fileViewModel).moveToNextConfiguredFileDirectory();
-    }
-
-    @Test
-    void shouldExecuteMoveToDefaultDirectoryAndRename() {
-        LinkedFileViewModel fileViewModel = mockOfflineExistingFileViewModel();
-        ContextAction action = newAction(StandardActions.MOVE_FILE_TO_FOLDER_AND_RENAME, fileViewModel);
-
-        action.execute();
-
-        verify(fileViewModel).moveToNextConfiguredFileDirectoryAndRename();
     }
 
     @Test

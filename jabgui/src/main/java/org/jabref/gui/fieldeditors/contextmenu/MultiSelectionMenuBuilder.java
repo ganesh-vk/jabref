@@ -69,7 +69,7 @@ record MultiSelectionMenuBuilder(
         menuItems.add(customBatchItem(actionFactory, StandardActions.OPEN_FOLDER, selection, this::isLocalAndExists, this::openContainingFolders));
         menuItems.add(batchCommandItem(actionFactory, StandardActions.DOWNLOAD_FILE, selection, this::isOnline));
         menuItems.add(batchCommandItem(actionFactory, StandardActions.REDOWNLOAD_FILE, selection, this::hasSourceUrl));
-        menuItems.add(batchCommandItem(actionFactory, StandardActions.MOVE_FILE_TO_FOLDER, selection, this::isMovableToDefaultDir));
+        menuItems.add(buildMoveToDirectoryItem(actionFactory, selection));
         menuItems.add(buildCopyToFolderItem(actionFactory, selection));
         menuItems.add(customBatchItem(actionFactory, StandardActions.REMOVE_LINKS, selection, this::alwaysEnabled,
                 linkedFileViewModels -> linkedFileViewModels.forEach(linkedFileViewModel ->
@@ -144,6 +144,12 @@ record MultiSelectionMenuBuilder(
         return actionFactory.createMenuItem(StandardActions.COPY_FILE_TO_FOLDER, copyCommand);
     }
 
+    private MenuItem buildMoveToDirectoryItem(ActionFactory actionFactory,
+                                              ObservableList<LinkedFileViewModel> selection) {
+        MoveFileSubmenuFactory moveFileSubmenuFactory = new MoveFileSubmenuFactory(actionFactory, databaseContext, preferences);
+        return moveFileSubmenuFactory.createForMulti(selection);
+    }
+
     private MenuItem batchCommandItem(ActionFactory actionFactory,
                                       StandardActions action,
                                       ObservableList<LinkedFileViewModel> selection,
@@ -209,11 +215,6 @@ record MultiSelectionMenuBuilder(
 
     boolean hasSourceUrl(LinkedFileViewModel linkedFileViewModel) {
         return !linkedFileViewModel.getFile().getSourceUrl().isEmpty();
-    }
-
-    boolean isMovableToDefaultDir(LinkedFileViewModel linkedFileViewModel) {
-        return isLocalAndExists(linkedFileViewModel)
-                && !linkedFileViewModel.isGeneratedPathSameAsOriginal();
     }
 
     void openContainingFolders(List<LinkedFileViewModel> linkedFileViewModels) {

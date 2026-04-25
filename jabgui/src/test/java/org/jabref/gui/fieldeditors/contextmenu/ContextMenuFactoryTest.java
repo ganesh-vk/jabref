@@ -9,6 +9,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
 
 import org.jabref.gui.DialogService;
@@ -17,6 +18,7 @@ import org.jabref.gui.fieldeditors.LinkedFilesEditorViewModel;
 import org.jabref.gui.preferences.GuiPreferences;
 import org.jabref.logic.FilePreferences;
 import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.database.FileDirectories;
 import org.jabref.model.entry.BibEntry;
 import org.jabref.model.entry.LinkedFile;
 
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.testfx.framework.junit5.ApplicationExtension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -53,6 +56,10 @@ class ContextMenuFactoryTest {
         filePreferences = mock(FilePreferences.class, Answers.RETURNS_DEEP_STUBS);
 
         when(guiPreferences.getFilePreferences()).thenReturn(filePreferences);
+        when(filePreferences.getMainFileDirectory()).thenReturn(Optional.of(Path.of("/main")));
+        when(bibDatabaseContext.getAllFileDirectories(filePreferences))
+                .thenReturn(new FileDirectories(Optional.of(Path.of("/user")), Optional.of(Path.of("/library")), Optional.of(Path.of("/main"))));
+        when(bibDatabaseContext.getDatabaseDirectory()).thenReturn(Optional.of(Path.of("/bib")));
 
         factory = new ContextMenuFactory(
                 mock(DialogService.class),
@@ -112,6 +119,47 @@ class ContextMenuFactoryTest {
                 "Menu should contain 'Remove link' in multi-selection");
         assertTrue(containsMenuItemWithText(contextMenu, "Copy linked file"),
                 "Menu should contain 'Copy linked file' item");
+    }
+
+    @Test
+    void singleSelectionContainsMoveSubmenu() {
+        LinkedFileViewModel offlineExistingFileViewModel = mockOfflineExistingFileViewModel(
+                bibDatabaseContext, filePreferences, ""
+        );
+        when(offlineExistingFileViewModel.isInCurrentDirectory(any())).thenReturn(false);
+
+        ContextMenu contextMenu = factory.createMenuForSelection(FXCollections.observableArrayList(offlineExistingFileViewModel));
+
+        Menu moveSubmenu = contextMenu.getItems().stream()
+                                      .filter(Menu.class::isInstance)
+                                      .map(Menu.class::cast)
+                                      .filter(menu -> menu.getText().contains("Move file"))
+                                      .findFirst()
+                                      .orElseThrow();
+
+        assertEquals(4, moveSubmenu.getItems().size());
+    }
+
+    @Test
+    void multiSelectionContainsMoveSubmenu() {
+        LinkedFileViewModel first = mockOfflineExistingFileViewModel(bibDatabaseContext, filePreferences, "");
+        LinkedFileViewModel second = mockOfflineExistingFileViewModel(bibDatabaseContext, filePreferences, "");
+
+        when(first.isInCurrentDirectory(any())).thenReturn(false);
+        when(second.isInCurrentDirectory(any())).thenReturn(false);
+
+        ContextMenu contextMenu = factory.createMenuForSelection(
+                FXCollections.observableArrayList(first, second)
+        );
+
+        Menu moveSubmenu = contextMenu.getItems().stream()
+                                      .filter(Menu.class::isInstance)
+                                      .map(Menu.class::cast)
+                                      .filter(menu -> menu.getText().contains("Move file"))
+                                      .findFirst()
+                                      .orElseThrow();
+
+        assertEquals(4, moveSubmenu.getItems().size());
     }
 
     private static boolean containsMenuItemWithText(ContextMenu contextMenu, String expectedFragment) {

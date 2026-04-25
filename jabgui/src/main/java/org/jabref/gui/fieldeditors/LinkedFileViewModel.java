@@ -6,11 +6,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.SequencedSet;
 import java.util.function.BiPredicate;
 
 import javafx.beans.Observable;
@@ -325,23 +323,12 @@ public class LinkedFileViewModel extends AbstractViewModel {
         }
     }
 
-    public void moveToNextConfiguredFileDirectory() {
+    public void moveToDirectory(Path destinationDirectory) {
         if (linkedFile.isOnlineLink()) {
-            // Cannot move remote links
-            return;
-        }
-
-        List<Path> configuredDirectories = getOrderedConfiguredDirectories();
-        if (configuredDirectories.isEmpty()) {
-            dialogService.showErrorDialogAndWait(
-                    Localization.lang("No directory found"),
-                    Localization.lang("Configure a file directory to move file(s).")
-            );
             return;
         }
 
         Optional<Path> currentFile = linkedFile.findIn(databaseContext, preferences.getFilePreferences());
-
         if (currentFile.isEmpty()) {
             dialogService.showErrorDialogAndWait(
                     Localization.lang("File not found"),
@@ -350,18 +337,10 @@ public class LinkedFileViewModel extends AbstractViewModel {
             return;
         }
 
-        Optional<Path> destinationDirectory = findNextTargetDirectory(currentFile.get(), configuredDirectories);
-        if (destinationDirectory.isEmpty()) {
-            dialogService.showErrorDialogAndWait(
-                    Localization.lang("No directory found"),
-                    Localization.lang("Configure another directory to move file(s).")
-            );
-            return;
-        }
+        Path destDirectoryWithPattern = getFullDestinationDirectory(destinationDirectory);
 
         try {
-            // [impl->req~gui.fieldeditors.file-transfer.next-available-directory~1]
-            linkedFileHandler.moveToExactDirectory(destinationDirectory.get());
+            linkedFileHandler.moveToExactDirectory(destDirectoryWithPattern);
         } catch (IOException exception) {
             dialogService.showErrorDialogAndWait(
                     Localization.lang("Move file"),
@@ -370,81 +349,38 @@ public class LinkedFileViewModel extends AbstractViewModel {
         }
     }
 
-    /// Returns the configured file directories in rotation order.
-    ///
-    /// Empty values and duplicate paths are removed so the move rotation works on distinct locations only.
-    private List<Path> getOrderedConfiguredDirectories() {
-        SequencedSet<Path> configuredDirectories = new LinkedHashSet<>();
-        for (Optional<Path> configuredDirectory : databaseContext.getAllFileDirectories(preferences.getFilePreferences()).asOrderedList()) {
-            configuredDirectory.ifPresent(configuredDirectories::add);
+    public void moveToDirectoryAndRename(Path destinationDirectory) {
+        if (!isInCurrentDirectory(destinationDirectory)) {
+            moveToDirectory(destinationDirectory);
         }
-
-        return List.copyOf(configuredDirectories);
+        renameToSuggestion();
     }
 
-    /// Finds the index of the configured directory that currently contains the linked file.
-    ///
-    /// The most specific directory is the longest configured parent of the current file directory.
-    /// For example, if a file is in `data/lib/user/file.pdf` and both `data/lib` and `data/lib/user` are configured,
-    /// the file is treated as being inside `data/lib/user`.
-    private int findCurrentConfiguredDirectoryIndex(Path currentFileDir, List<Path> configuredDirectories) {
-        if (currentFileDir == null) {
-            return -1;
+    /// Checks if the current linked file is already located in the target directory (considering also the directory pattern if exists).
+    public boolean isInCurrentDirectory(Path destinationDirectory) {
+        Optional<Path> currentDirectory = getCurrentFileDirectory();
+        if (currentDirectory.isEmpty()) {
+            return false;
         }
 
-        int currentConfiguredDirectoryIndex = -1;
-        // We use path length to find the number of directories in the path of the file
-        int pathLength = -1;
-        for (int i = 0; i < configuredDirectories.size(); i++) {
-            Path configuredDirectory = configuredDirectories.get(i);
-            if (configuredDirectory.equals(currentFileDir) || currentFileDir.startsWith(configuredDirectory)) {
-                // If a configured directory is nested inside another configured directory, the nested directory should be treated as the parent directory of the file.
-                int currentPathLength = configuredDirectory.getNameCount();
-                if (currentPathLength > pathLength) {
-                    currentConfiguredDirectoryIndex = i;
-                    pathLength = currentPathLength;
-                }
-            }
+        Path destDirectoryWithPattern = getFullDestinationDirectory(destinationDirectory);
+        try {
+            Files.isSameFile(currentDirectory.get(), destDirectoryWithPattern);
+            return true;
+        } catch (IOException e) {
+            LOGGER.debug("Could not compare directories {} and {}.", currentDirectory.get(), destDirectoryWithPattern, e);
+            return false;
         }
-
-        return currentConfiguredDirectoryIndex;
     }
 
-    /// Finds the next configured directory in rotation order.
-    ///
-    /// If the file is not in any configured directory, the first configured directory is selected.
-    /// If there is only one distinct configured directory, no move target is available.
-    private Optional<Path> findNextConfiguredDirectory(Path currentFile, List<Path> configuredDirectories) {
-        if (configuredDirectories.size() < 2) {
-            return Optional.empty();
-        }
-
-        int currentConfiguredDirectoryIndex = findCurrentConfiguredDirectoryIndex(currentFile.getParent(), configuredDirectories);
-
-        int nextConfiguredDirectoryIndex = (currentConfiguredDirectoryIndex + 1) % configuredDirectories.size();
-        return Optional.of(configuredDirectories.get(nextConfiguredDirectoryIndex));
+    private Optional<Path> getCurrentFileDirectory() {
+        return linkedFile.findIn(databaseContext, preferences.getFilePreferences())
+                         .map(Path::getParent);
     }
 
-    /// Finds the destination directory for the next configured file-directory move.
-    ///
-    /// The destination preserves the configured directory rotation order, appends the generated directory pattern,
-    /// and mirrors any subdirectory structure below the current configured directory.
-    private Optional<Path> findNextTargetDirectory(Path currentFile, List<Path> configuredDirectories) {
-        Optional<Path> nextConfiguredDirectory = findNextConfiguredDirectory(currentFile, configuredDirectories);
-        if (nextConfiguredDirectory.isEmpty()) {
-            return Optional.empty();
-        }
-
-        Path destinationDirectory = nextConfiguredDirectory.get().resolve(getFileDirectoryPattern()).normalize();
-        int currentConfiguredDirectoryIndex = findCurrentConfiguredDirectoryIndex(currentFile.getParent(), configuredDirectories);
-        if (currentConfiguredDirectoryIndex == -1) {
-            return Optional.of(destinationDirectory);
-        }
-
-        Path currentConfiguredDirectory = configuredDirectories.get(currentConfiguredDirectoryIndex);
-        return getRelativeSubdirectoryExcludingPattern(currentConfiguredDirectory, currentFile)
-                .map(relativeSubdirectory -> destinationDirectory.resolve(relativeSubdirectory).normalize())
-                .or(() -> Optional.of(destinationDirectory));
+    /// Constructs the target directory by appending the directory pattern (if exists) to the given base directory.
+    private Path getFullDestinationDirectory(Path targetBaseDirectory) {
+        return targetBaseDirectory.resolve(getFileDirectoryPattern()).normalize();
     }
 
     private Path getFileDirectoryPattern() {
@@ -459,30 +395,6 @@ public class LinkedFileViewModel extends AbstractViewModel {
                 directoryPattern);
 
         return Path.of(targetDirectoryName);
-    }
-
-    /// Returns the relative subdirectory below the configured directory while stripping the generated directory pattern.
-    ///
-    /// This prevents repeated directory-pattern creation when moving files across multiple configured directories.
-    private Optional<Path> getRelativeSubdirectoryExcludingPattern(Path configuredDirectory, Path currentFile) {
-        Path relativePath = configuredDirectory.relativize(currentFile);
-        Path relativeSubdirectory = relativePath.getParent();
-
-        if (relativeSubdirectory == null) {
-            return Optional.empty();
-        }
-
-        Path directoryPatternPath = getFileDirectoryPattern();
-        if (!directoryPatternPath.toString().isEmpty() && relativeSubdirectory.startsWith(directoryPatternPath)) {
-            Path patternRelativeSubdirectory = directoryPatternPath.relativize(relativeSubdirectory);
-
-            if (patternRelativeSubdirectory.toString().isEmpty()) {
-                return Optional.empty();
-            }
-            return Optional.of(patternRelativeSubdirectory);
-        }
-
-        return Optional.of(relativeSubdirectory);
     }
 
     /// Gets the filename for the current linked file and compares it to the new suggested filename.
@@ -529,11 +441,6 @@ public class LinkedFileViewModel extends AbstractViewModel {
             }
         };
         return OptionalUtil.equals(targetDir, currentDir, equality);
-    }
-
-    public void moveToNextConfiguredFileDirectoryAndRename() {
-        moveToNextConfiguredFileDirectory();
-        renameToSuggestion();
     }
 
     /// Asks the user for confirmation that he really wants to the delete the file from disk (or just remove the link)

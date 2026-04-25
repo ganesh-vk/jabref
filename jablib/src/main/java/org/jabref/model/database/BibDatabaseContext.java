@@ -190,14 +190,7 @@ public class BibDatabaseContext {
 
         // BIB file directory or Main file directory (according to (global) preferences)
         if (preferences.shouldStoreFilesRelativeToBibFile()) {
-            bibOrMainFileDirectory = getDatabasePath().map(dbPath -> {
-                Path parentPath = dbPath.getParent();
-                if (parentPath == null) {
-                    parentPath = Path.of(System.getProperty("user.dir"));
-                    LOGGER.warn("Parent path of database file {} is null. Falling back to {}.", dbPath, parentPath);
-                }
-                return parentPath.toAbsolutePath();
-            });
+            bibOrMainFileDirectory = getDatabaseDirectory();
         } else {
             bibOrMainFileDirectory = preferences.getMainFileDirectory();
         }
@@ -207,6 +200,17 @@ public class BibDatabaseContext {
                 librarySpecificFileDirectory,
                 bibOrMainFileDirectory
         );
+    }
+
+    public Optional<Path> getDatabaseDirectory() {
+        return getDatabasePath().map(dbPath -> {
+            Path parentPath = dbPath.getParent();
+            if (parentPath == null) {
+                parentPath = Path.of(System.getProperty("user.dir"));
+                LOGGER.warn("Parent path of database file {} is null. Falling back to {}.", dbPath, parentPath);
+            }
+            return parentPath.toAbsolutePath();
+        });
     }
 
     /// Returns the first existing file directory from  {@link #getFileDirectories(FilePreferences)}

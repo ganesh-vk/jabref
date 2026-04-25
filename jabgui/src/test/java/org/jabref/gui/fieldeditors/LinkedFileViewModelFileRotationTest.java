@@ -3,8 +3,6 @@ package org.jabref.gui.fieldeditors;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
-import java.util.stream.Stream;
 
 import org.jabref.gui.DialogService;
 import org.jabref.gui.frame.ExternalApplicationsPreferences;
@@ -15,7 +13,6 @@ import org.jabref.logic.util.TaskExecutor;
 import org.jabref.logic.util.io.FileUtil;
 import org.jabref.model.database.BibDatabase;
 import org.jabref.model.database.BibDatabaseContext;
-import org.jabref.model.database.FileDirectories;
 import org.jabref.model.entry.BibEntry;
 import org.jabref.model.entry.LinkedFile;
 import org.jabref.model.entry.types.StandardEntryType;
@@ -24,15 +21,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.testfx.framework.junit5.ApplicationExtension;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -50,9 +42,8 @@ class LinkedFileViewModelFileRotationTest {
     private TaskExecutor taskExecutor;
     private BibEntry entry;
 
-    private Path userDir;
-    private Path libDir;
-    private Path bibDir;
+    private Path sourceDir;
+    private Path destinationDir;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -69,234 +60,85 @@ class LinkedFileViewModelFileRotationTest {
         entry = new BibEntry(StandardEntryType.Article);
         when(databaseContext.getDatabase()).thenReturn(new BibDatabase());
 
-        userDir = tempDir.resolve("user");
-        libDir = tempDir.resolve("lib");
-        bibDir = tempDir.resolve("bib");
-        Files.createDirectories(userDir);
-        Files.createDirectories(libDir);
-        Files.createDirectories(bibDir);
-    }
-
-    static Stream<Arguments> rotationCases() {
-        return Stream.of(
-                Arguments.of("user", "lib"),
-                Arguments.of("lib", "bib"),
-                Arguments.of("bib", "user")
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("rotationCases")
-    void moveToNextRotates(String sourceDirectoryName, String targetDirectoryName) throws IOException {
-        FileDirectories dirs = new FileDirectories(Optional.of(userDir), Optional.of(libDir), Optional.of(bibDir));
-        when(databaseContext.getAllFileDirectories(any())).thenReturn(dirs);
-
-        Path sourceDirectory = tempDir.resolve(sourceDirectoryName);
-        Path targetDirectory = tempDir.resolve(targetDirectoryName);
-
-        Path fileInSource = sourceDirectory.resolve("test.pdf");
-        Files.createFile(fileInSource);
-        LinkedFile linkedFile = new LinkedFile("desc", fileInSource, "pdf");
-
-        LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
-
-        viewModel.moveToNextConfiguredFileDirectory();
-
-        assertTrue(Files.exists(targetDirectory.resolve("test.pdf")));
-        assertFalse(Files.exists(fileInSource));
+        sourceDir = tempDir.resolve("source");
+        destinationDir = tempDir.resolve("destination");
+        Files.createDirectories(sourceDir);
+        Files.createDirectories(destinationDir);
     }
 
     @Test
-    void moveToNextSkipsNullDirectory() throws IOException {
-        FileDirectories dirs = new FileDirectories(Optional.of(userDir), Optional.empty(), Optional.of(bibDir));
-        when(databaseContext.getAllFileDirectories(any())).thenReturn(dirs);
+    void moveToDirectoryMovesFileToChosenTarget() throws IOException {
+        Path sourceFile = sourceDir.resolve("nested/sub/test.pdf");
+        Files.createDirectories(sourceFile.getParent());
+        Files.createFile(sourceFile);
 
-        Path fileInUser = userDir.resolve("test.pdf");
-        Files.createFile(fileInUser);
-        LinkedFile linkedFile = new LinkedFile("desc", fileInUser, "pdf");
-
+        LinkedFile linkedFile = new LinkedFile("desc", sourceFile, "pdf");
         LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
 
-        viewModel.moveToNextConfiguredFileDirectory();
-        assertTrue(Files.exists(bibDir.resolve("test.pdf")));
-        assertFalse(Files.exists(fileInUser));
+        viewModel.moveToDirectory(destinationDir);
+
+        assertTrue(Files.exists(destinationDir.resolve("test.pdf")));
+        assertFalse(Files.exists(sourceFile));
     }
 
     @Test
-    void moveToNextShowsErrorIfNoOtherDirectoryConfigured() throws IOException {
-        FileDirectories dirs = new FileDirectories(Optional.of(userDir), Optional.empty(), Optional.empty());
-        when(databaseContext.getAllFileDirectories(any())).thenReturn(dirs);
-
-        Path fileInUser = userDir.resolve("test.pdf");
-        Files.createFile(fileInUser);
-        LinkedFile linkedFile = new LinkedFile("", fileInUser, "pdf");
-
-        LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
-
-        viewModel.moveToNextConfiguredFileDirectory();
-
-        verify(dialogService).showErrorDialogAndWait(
-                eq(Localization.lang("No directory found")),
-                eq(Localization.lang("Configure another directory to move file(s)."))
-        );
-        assertTrue(Files.exists(fileInUser));
-    }
-
-    @Test
-    void moveToNextShowsErrorIfNoDirectoryConfigured() throws IOException {
-        FileDirectories dirs = new FileDirectories(Optional.empty(), Optional.empty(), Optional.empty());
-        when(databaseContext.getAllFileDirectories(any())).thenReturn(dirs);
-
-        Path file = tempDir.resolve("test.pdf");
-        Files.createFile(file);
-        LinkedFile linkedFile = new LinkedFile("", file, "pdf");
-
-        LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
-
-        viewModel.moveToNextConfiguredFileDirectory();
-
-        verify(dialogService).showErrorDialogAndWait(
-                eq(Localization.lang("No directory found")),
-                eq(Localization.lang("Configure a file directory to move file(s)."))
-        );
-        assertTrue(Files.exists(file));
-    }
-
-    @Test
-    void moveToNextMovesToUserIfFileNotInAnyDirectory() throws IOException {
-        FileDirectories dirs = new FileDirectories(Optional.of(userDir), Optional.of(libDir), Optional.of(bibDir));
-        when(databaseContext.getAllFileDirectories(any())).thenReturn(dirs);
-
-        Path randomDir = tempDir.resolve("random");
-        Files.createDirectories(randomDir);
-        Path fileRandom = randomDir.resolve("test.pdf");
-        Files.createFile(fileRandom);
-
-        LinkedFile linkedFile = new LinkedFile("desc", fileRandom, "pdf");
-
-        LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
-
-        viewModel.moveToNextConfiguredFileDirectory();
-        assertTrue(Files.exists(userDir.resolve("test.pdf")));
-        assertFalse(Files.exists(fileRandom));
-    }
-
-    @Test
-    void moveToNextMirrorsDirectoryStructure() throws IOException {
-        FileDirectories dirs = new FileDirectories(Optional.of(userDir), Optional.of(libDir), Optional.of(bibDir));
-        when(databaseContext.getAllFileDirectories(any())).thenReturn(dirs);
-
-        Path nestedDir = userDir.resolve("x/y/z");
-        Files.createDirectories(nestedDir);
-        Path testFile = nestedDir.resolve("test.pdf");
-        Files.createFile(testFile);
-        LinkedFile linkedFile = new LinkedFile("desc", testFile, "pdf");
-
-        LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
-
-        viewModel.moveToNextConfiguredFileDirectory();
-
-        assertTrue(Files.exists(libDir.resolve("x/y/z/test.pdf")));
-        assertFalse(Files.exists(userDir.resolve("x/y/z/test.pdf")));
-    }
-
-    @Test
-    void moveToNextDoesNotMirrorDirectoryStructureWhenFileNotInConfiguredDirectory() throws IOException {
-        FileDirectories dirs = new FileDirectories(Optional.of(userDir), Optional.of(libDir), Optional.of(bibDir));
-        when(databaseContext.getAllFileDirectories(any())).thenReturn(dirs);
-
-        Path nestedDir = tempDir.resolve("x/y/z");
-        Files.createDirectories(nestedDir);
-        Path testFile = nestedDir.resolve("test.pdf");
-        Files.createFile(testFile);
-        LinkedFile linkedFile = new LinkedFile("desc", testFile, "pdf");
-
-        LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
-
-        viewModel.moveToNextConfiguredFileDirectory();
-
-        assertTrue(Files.exists(userDir.resolve("test.pdf")));
-        assertFalse(Files.exists(userDir.resolve("x/y/z/test.pdf")));
-    }
-
-    @Test
-    void moveToNextMirrorsSubdirectoriesWithoutDuplicatingPatternDirectory() throws IOException {
+    void moveToDirectoryUsesConfiguredDirectoryPattern() throws IOException {
         when(filePreferences.getFileDirectoryPattern()).thenReturn("[entrytype]");
 
-        FileDirectories dirs = new FileDirectories(Optional.of(userDir), Optional.of(libDir), Optional.of(bibDir));
-        when(databaseContext.getAllFileDirectories(any())).thenReturn(dirs);
+        Path sourceFile = sourceDir.resolve("test.pdf");
+        Files.createFile(sourceFile);
+
+        LinkedFile linkedFile = new LinkedFile("desc", sourceFile, "pdf");
+
+        LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
+
+        viewModel.moveToDirectory(destinationDir);
 
         String targetDirectoryName = FileUtil.createDirNameFromPattern(databaseContext.getDatabase(), entry, "[entrytype]");
-        Path nestedDir = userDir.resolve(targetDirectoryName).resolve("x/y");
-        Files.createDirectories(nestedDir);
-        Path testFile = nestedDir.resolve("test.pdf");
-        Files.createFile(testFile);
-        LinkedFile linkedFile = new LinkedFile("desc", testFile, "pdf");
-
-        LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
-
-        viewModel.moveToNextConfiguredFileDirectory();
-
-        Path movedFile = libDir.resolve(targetDirectoryName).resolve("x/y/test.pdf");
+        Path movedFile = destinationDir.resolve(targetDirectoryName).resolve("test.pdf");
         assertTrue(Files.exists(movedFile));
-        assertFalse(Files.exists(libDir.resolve(targetDirectoryName).resolve(targetDirectoryName).resolve("x/y/test.pdf")));
-        assertFalse(Files.exists(testFile));
+        assertFalse(Files.exists(sourceFile));
     }
 
     @Test
-    void moveToNextUsesMostSpecificConfiguredDirectoryWhenDirectoriesOverlap() throws IOException {
-        Path nestedUserDir = libDir.resolve("nested-user");
-        Files.createDirectories(nestedUserDir);
-
-        FileDirectories dirs = new FileDirectories(Optional.of(nestedUserDir), Optional.of(libDir), Optional.of(bibDir));
-        when(databaseContext.getAllFileDirectories(any())).thenReturn(dirs);
-
-        Path nestedDir = nestedUserDir.resolve("papers");
-        Files.createDirectories(nestedDir);
-        Path testFile = nestedDir.resolve("test.pdf");
-        Files.createFile(testFile);
-        LinkedFile linkedFile = new LinkedFile("desc", testFile, "pdf");
+    void moveToDirectoryShowsErrorIfFileCannotBeResolved() {
+        Path missingFile = sourceDir.resolve("missing.pdf");
+        LinkedFile linkedFile = new LinkedFile("desc", missingFile, "pdf");
 
         LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
 
-        viewModel.moveToNextConfiguredFileDirectory();
+        viewModel.moveToDirectory(destinationDir);
 
-        Path movedFile = libDir.resolve("papers/test.pdf");
-        assertTrue(Files.exists(movedFile));
-        assertFalse(Files.exists(bibDir.resolve("papers/test.pdf")));
-        assertFalse(Files.exists(libDir.resolve("nested-user/papers/test.pdf")));
-        assertFalse(Files.exists(testFile));
+        verify(dialogService).showErrorDialogAndWait(
+                eq(Localization.lang("File not found")),
+                eq(Localization.lang("Could not find file '%0'.", linkedFile.getLink()))
+        );
     }
 
     @Test
-    void moveToNextFileWithoutParentDoesNotThrowNPE() throws IOException {
-        FileDirectories dirs = new FileDirectories(Optional.of(userDir), Optional.of(libDir), Optional.of(bibDir));
-        when(databaseContext.getAllFileDirectories(any())).thenReturn(dirs);
+    void isInDirectoryReturnsTrueForCurrentCurrentDirectoryAndPattern() throws IOException {
+        when(filePreferences.getFileDirectoryPattern()).thenReturn("[entrytype]");
+        String targetDirectoryName = FileUtil.createDirNameFromPattern(databaseContext.getDatabase(), entry, "[entrytype]");
 
-        Path fileWithoutParent = Path.of("test.pdf");
-        Files.createFile(fileWithoutParent);
+        Path existingFile = destinationDir.resolve(targetDirectoryName).resolve("test.pdf");
+        Files.createDirectories(existingFile.getParent());
+        Files.createFile(existingFile);
 
-        LinkedFile linkedFile = new LinkedFile("desc", fileWithoutParent, "pdf");
+        LinkedFile linkedFile = new LinkedFile("desc", existingFile, "pdf");
 
         LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
 
-        assertDoesNotThrow(viewModel::moveToNextConfiguredFileDirectory);
+        assertTrue(viewModel.isInCurrentDirectory(destinationDir));
     }
 
     @Test
-    void moveToNextSkipsDuplicateConfiguredDirectories() throws IOException {
-        FileDirectories dirs = new FileDirectories(Optional.of(userDir), Optional.of(userDir), Optional.of(bibDir));
-        when(databaseContext.getAllFileDirectories(any())).thenReturn(dirs);
-
-        Path fileInUser = userDir.resolve("test.pdf");
-        Files.createFile(fileInUser);
-        LinkedFile linkedFile = new LinkedFile("desc", fileInUser, "pdf");
+    void isInDirectoryReturnsFalseForDifferentCurrentDirectory() throws IOException {
+        Path existingFile = sourceDir.resolve("test.pdf");
+        Files.createFile(existingFile);
+        LinkedFile linkedFile = new LinkedFile("desc", existingFile, "pdf");
 
         LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
 
-        viewModel.moveToNextConfiguredFileDirectory();
-
-        assertTrue(Files.exists(bibDir.resolve("test.pdf")));
-        assertFalse(Files.exists(fileInUser));
+        assertFalse(viewModel.isInCurrentDirectory(destinationDir));
     }
 }
