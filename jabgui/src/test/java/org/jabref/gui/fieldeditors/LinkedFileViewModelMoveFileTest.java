@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(ApplicationExtension.class)
-class LinkedFileViewModelFileRotationTest {
+class LinkedFileViewModelMoveFileTest {
 
     @TempDir Path tempDir;
 
