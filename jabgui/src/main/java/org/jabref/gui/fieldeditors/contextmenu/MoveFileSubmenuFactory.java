@@ -120,10 +120,6 @@ class MoveFileSubmenuFactory {
                 && (!linkedFileViewModel.isInCurrentDirectory(targetDirectory.get())
                 || (renameAfterMove && !linkedFileViewModel.isGeneratedNameSameAsOriginal()));
         SimpleCommand command = new SimpleCommand() {
-            {
-                setExecutable(isMenuItemExecutable);
-            }
-
             @Override
             public void execute() {
                 if (renameAfterMove) {
@@ -133,6 +129,7 @@ class MoveFileSubmenuFactory {
                 }
             }
         };
+        command.setExecutable(isMenuItemExecutable);
         return actionFactory.createCustomMenuItem(action, command, label);
     }
 
@@ -141,12 +138,8 @@ class MoveFileSubmenuFactory {
                                 ObservableList<LinkedFileViewModel> selectedFiles) {
         String label = getMenuItemLabel(directoryType, targetDirectory);
         boolean hasMovableFile = selectedFiles.stream().anyMatch(this::isMovable);
-        boolean menuItemExecutable = hasMovableFile && targetDirectory.isPresent();
+        boolean isMenuItemExecutable = hasMovableFile && targetDirectory.isPresent();
         SimpleCommand command = new SimpleCommand() {
-            {
-                setExecutable(menuItemExecutable);
-            }
-
             @Override
             public void execute() {
                 if (targetDirectory.isEmpty()) {
@@ -161,6 +154,7 @@ class MoveFileSubmenuFactory {
                 });
             }
         };
+        command.setExecutable(isMenuItemExecutable);
         return actionFactory.createCustomMenuItem(StandardActions.MOVE_FILE_TO_FOLDER, command, label);
     }
 
