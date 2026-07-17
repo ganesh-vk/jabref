@@ -75,7 +75,7 @@ class ContextMenuFactoryTest {
         when(guiPreferences.getFieldPreferences()).thenReturn(fieldPreferences);
         when(filePreferences.getMainFileDirectory()).thenReturn(Optional.of(Path.of("/main")));
         when(bibDatabaseContext.getAllFileDirectories(filePreferences))
-                .thenReturn(new FileDirectories(Path.of("/user"), Path.of("/library"), Path.of("/main")));
+                .thenReturn(new FileDirectories(Path.of("/user"), Path.of("/library"), Path.of("/main"), Path.of("/webdav")));
         when(bibDatabaseContext.getDatabaseDirectory()).thenReturn(Optional.of(Path.of("/bib")));
 
         factory = new ContextMenuFactory(

@@ -101,6 +101,14 @@ public class MetaDataSerializerTest {
     }
 
     @Test
+    void serializeWebDavFileDirectory() {
+        metaData.setWebDavFileDirectory("user-host", "/mnt/webdav");
+
+        assertEquals(Map.of("webDavFileDirectory-user-host", "/mnt/webdav;"),
+                MetaDataSerializer.getSerializedStringMap(metaData, pattern));
+    }
+
+    @Test
     void parsingEmptyOrFieldsReturnsEmptyCollections() {
         String serialized = MetaDataSerializer.serializeCustomEntryTypes(newCustomType);
         Optional<BibEntryType> type = MetaDataParser.parseCustomEntryType(serialized);

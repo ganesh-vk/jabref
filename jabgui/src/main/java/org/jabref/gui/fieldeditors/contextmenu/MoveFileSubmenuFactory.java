@@ -58,6 +58,7 @@ class MoveFileSubmenuFactory {
         directories.put(Localization.lang("Main file directory: %0"), mainFileDirectory);
         directories.put(Localization.lang("Library-specific file directory: %0"), fileDirectories.getLibraryDirectoryOpt());
         directories.put(Localization.lang("User-specific file directory: %0"), fileDirectories.getUserDirectoryOpt());
+        directories.put(Localization.lang("WebDAV file directory: %0"), fileDirectories.getWebDavDirectoryOpt());
         directories.put(Localization.lang("Next to library file: %0"), databaseContext.getDatabaseDirectory());
 
         Menu menu = actionFactory.createMenu(operation.getAction());

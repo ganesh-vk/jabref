@@ -10,7 +10,8 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public record FileDirectories(@Nullable Path userDirectory,
                               @Nullable Path libraryDirectory,
-                              @Nullable Path fallbackDirectory) {
+                              @Nullable Path fallbackDirectory,
+                              @Nullable Path webDavDirectory) {
 
     public Optional<Path> getUserDirectoryOpt() {
         return Optional.ofNullable(userDirectory);
@@ -22,5 +23,9 @@ public record FileDirectories(@Nullable Path userDirectory,
 
     public Optional<Path> getFallbackDirectoryOpt() {
         return Optional.ofNullable(fallbackDirectory);
+    }
+
+    public Optional<Path> getWebDavDirectoryOpt() {
+        return Optional.ofNullable(webDavDirectory);
     }
 }

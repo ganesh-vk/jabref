@@ -27,6 +27,7 @@
             <RowConstraints/>
             <RowConstraints/>
             <RowConstraints/>
+            <RowConstraints/>
         </rowConstraints>
 
         <Label styleClass="sectionHeader" text="%Override default file directories"
@@ -91,25 +92,25 @@
             </tooltip>
         </Button>
 
-        <Label text="%LaTeX file directory"
+        <Label text="%WebDAV file directory"
                GridPane.columnIndex="0" GridPane.rowIndex="3"/>
-        <TextField fx:id="latexFileDirectory"
+        <TextField fx:id="webDavFileDirectory"
                    GridPane.columnIndex="1" GridPane.rowIndex="3">
             <tooltip>
-                <Tooltip fx:id="latexFileDirectoryTooltip"/>
+                <Tooltip fx:id="webDavFileDirectoryTooltip"/>
             </tooltip>
         </TextField>
-        <Button fx:id="laTexSpecificFileDirSwitchId" onAction="#laTexSpecificFileDirPathSwitch"
+        <Button fx:id="webDavFileDirSwitchId" onAction="#webDavFileDirPathSwitch"
                 styleClass="icon-button,narrow" prefHeight="20.0" prefWidth="20.0"
                 GridPane.columnIndex="2" GridPane.rowIndex="3">
             <graphic>
-                <JabRefIconView fx:id="laTexSpecificFileDirSwitchIcon" glyph="ABSOLUTE_PATH"/>
+                <JabRefIconView fx:id="webDavFileDirSwitchIcon" glyph="ABSOLUTE_PATH"/>
             </graphic>
             <tooltip>
-                <Tooltip fx:id ="laTexSpecificFileDirSwitchTooltip" text="%Switch to absolute path: converts the path to an absolute path."/>
+                <Tooltip fx:id="webDavFileDirSwitchTooltip" text="%Switch to absolute path: converts the path to an absolute path."/>
             </tooltip>
         </Button>
-        <Button onAction="#browseLatexFileDirectory"
+        <Button onAction="#browseWebDavFileDirectory"
                 styleClass="icon-button,narrow" prefHeight="20.0" prefWidth="20.0"
                 GridPane.columnIndex="3" GridPane.rowIndex="3">
             <graphic>
@@ -120,16 +121,45 @@
             </tooltip>
         </Button>
 
+        <Label text="%LaTeX file directory"
+                GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+        <TextField fx:id="latexFileDirectory"
+                    GridPane.columnIndex="1" GridPane.rowIndex="4">
+            <tooltip>
+                <Tooltip fx:id="latexFileDirectoryTooltip"/>
+            </tooltip>
+        </TextField>
+        <Button fx:id="laTexSpecificFileDirSwitchId" onAction="#laTexSpecificFileDirPathSwitch"
+                styleClass="icon-button,narrow" prefHeight="20.0" prefWidth="20.0"
+                 GridPane.columnIndex="2" GridPane.rowIndex="4">
+            <graphic>
+                <JabRefIconView fx:id="laTexSpecificFileDirSwitchIcon" glyph="ABSOLUTE_PATH"/>
+            </graphic>
+            <tooltip>
+                <Tooltip fx:id ="laTexSpecificFileDirSwitchTooltip" text="%Switch to absolute path: converts the path to an absolute path."/>
+            </tooltip>
+        </Button>
+        <Button onAction="#browseLatexFileDirectory"
+                styleClass="icon-button,narrow" prefHeight="20.0" prefWidth="20.0"
+                 GridPane.columnIndex="3" GridPane.rowIndex="4">
+            <graphic>
+                <JabRefIconView glyph="OPEN"/>
+            </graphic>
+            <tooltip>
+                <Tooltip text="%Browse"/>
+            </tooltip>
+        </Button>
+
         <Label styleClass="sectionHeader" text="%General"
-               GridPane.columnSpan="3" GridPane.rowIndex="4"/>
+                GridPane.columnSpan="3" GridPane.rowIndex="5"/>
         <Label text="%Library mode"
-               GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+                GridPane.columnIndex="0" GridPane.rowIndex="6"/>
         <ComboBox fx:id="databaseMode" prefWidth="150.0"
-                  GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="5"/>
+                   GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="6"/>
         <Label text="%Library encoding"
-               GridPane.columnIndex="0" GridPane.rowIndex="6"/>
+                GridPane.columnIndex="0" GridPane.rowIndex="7"/>
         <ComboBox fx:id="encoding" prefWidth="150.0"
-                  GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="6"/>
+                   GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="7"/>
 
     </GridPane>
 </fx:root>

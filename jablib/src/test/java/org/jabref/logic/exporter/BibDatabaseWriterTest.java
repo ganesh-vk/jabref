@@ -861,12 +861,14 @@ class BibDatabaseWriterTest {
         metaData.setLibrarySpecificFileDirectory("\\Literature\\");
         metaData.setUserFileDirectory("defaultOwner-user", "D:\\Documents");
         metaData.setLatexFileDirectory("defaultOwner-user", "D:\\Latex");
+        metaData.setWebDavFileDirectory("defaultOwner-user", "W:\\Literature");
 
         databaseWriter.writePartOfDatabase(bibtexContext, List.of());
 
         assertEquals("@Comment{jabref-meta: fileDirectory:\\\\Literature\\\\;}" + OS.NEWLINE +
                 OS.NEWLINE + "@Comment{jabref-meta: fileDirectory-defaultOwner-user:D:\\\\Documents;}"
-                + OS.NEWLINE + OS.NEWLINE + "@Comment{jabref-meta: fileDirectoryLatex-defaultOwner-user:D:\\\\Latex;}" + OS.NEWLINE, stringWriter.toString());
+                + OS.NEWLINE + OS.NEWLINE + "@Comment{jabref-meta: fileDirectoryLatex-defaultOwner-user:D:\\\\Latex;}"
+                + OS.NEWLINE + OS.NEWLINE + "@Comment{jabref-meta: webDavFileDirectory-defaultOwner-user:W:\\\\Literature;}" + OS.NEWLINE, stringWriter.toString());
     }
 
     @Test

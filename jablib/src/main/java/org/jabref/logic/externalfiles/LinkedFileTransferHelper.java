@@ -180,6 +180,6 @@ public class LinkedFileTransferHelper {
     /// @param filePreferences File preferences for the context
     /// @return Optional containing the primary directory path, or empty if none found
     static Optional<Path> getPrimaryPath(BibDatabaseContext context, FilePreferences filePreferences) {
-        return context.getFileDirectories(filePreferences).stream().findFirst();
+        return context.getFileDirectoriesForNewFiles(filePreferences).stream().findFirst();
     }
 }

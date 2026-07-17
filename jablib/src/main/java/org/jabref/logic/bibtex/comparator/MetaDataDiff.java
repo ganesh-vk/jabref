@@ -27,7 +27,8 @@ public class MetaDataDiff {
         PROTECTED,
         SAVE_ACTIONS,
         SAVE_SORT_ORDER,
-        USER_FILE_DIRECTORY
+        USER_FILE_DIRECTORY,
+        WEBDAV_FILE_DIRECTORY
     }
 
     public record Difference(DifferenceType differenceType, Object originalObject, Object newObject) {
@@ -107,6 +108,7 @@ public class MetaDataDiff {
                 newMetaData.getCiteKeyPatterns(globalCitationKeyPatterns));
         addToListIfDiff(changes, DifferenceType.USER_FILE_DIRECTORY, originalMetaData.getUserFileDirectories(), newMetaData.getUserFileDirectories());
         addToListIfDiff(changes, DifferenceType.LATEX_FILE_DIRECTORY, originalMetaData.getLatexFileDirectories(), newMetaData.getLatexFileDirectories());
+        addToListIfDiff(changes, DifferenceType.WEBDAV_FILE_DIRECTORY, originalMetaData.getWebDavFileDirectories(), newMetaData.getWebDavFileDirectories());
         addToListIfDiff(changes, DifferenceType.DEFAULT_KEY_PATTERN, originalMetaData.getDefaultCiteKeyPattern(), newMetaData.getDefaultCiteKeyPattern());
         addToListIfDiff(changes, DifferenceType.SAVE_ACTIONS, originalMetaData.getSaveActions(), newMetaData.getSaveActions());
         addToListIfDiff(changes, DifferenceType.MODE, originalMetaData.getMode(), newMetaData.getMode());

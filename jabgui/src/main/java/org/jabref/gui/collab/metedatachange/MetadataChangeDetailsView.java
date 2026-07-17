@@ -190,6 +190,8 @@ public final class MetadataChangeDetailsView extends DatabaseChangeDetailsView {
                     Localization.lang("User-specific file directory");
             case LATEX_FILE_DIRECTORY ->
                     Localization.lang("LaTeX file directory");
+            case WEBDAV_FILE_DIRECTORY ->
+                    Localization.lang("WebDAV file directory");
             case DEFAULT_KEY_PATTERN ->
                     Localization.lang("Default pattern");
             case SAVE_ACTIONS ->

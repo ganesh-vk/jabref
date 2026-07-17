@@ -31,4 +31,15 @@ The function `Quality -> Automatically set file links` can help user to auto-lin
 
 Needs: impl, utest
 
+## Resolve linked files from an OS-mounted WebDAV directory
+`req~logic.externalfiles.webdav-mounted-directory~1`
+
+Users can configure one operating-system-mounted WebDAV directory per user, host, and library.
+JabRef must use this directory when relativizing and resolving linked files without making it the default destination for downloaded or copied files.
+The operating system is responsible for connecting to and synchronizing the WebDAV server.
+
+Related issue: [#16142](https://github.com/JabRef/jabref/issues/16142)
+
+Needs: impl, utest
+
 <!-- markdownlint-disable-file MD022 -->

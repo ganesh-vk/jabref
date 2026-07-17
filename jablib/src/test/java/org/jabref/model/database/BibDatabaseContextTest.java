@@ -130,6 +130,50 @@ class BibDatabaseContextTest {
     }
 
     @Test
+    /// [utest->req~logic.externalfiles.webdav-mounted-directory~1]
+    void getWebDavFileDirectoryAfterExistingDirectories() {
+        when(fileDirPrefs.getUserAndHost()).thenReturn("user-host");
+        Path file = Path.of("/absolute/subdir/biblio.bib");
+
+        BibDatabaseContext database = new BibDatabaseContext();
+        database.setDatabasePath(file);
+        database.getMetaData().setUserFileDirectory("user-host", "user");
+        database.getMetaData().setLibrarySpecificFileDirectory("library");
+        database.getMetaData().setWebDavFileDirectory("user-host", "/mnt/webdav");
+
+        assertEquals(List.of(
+                        Path.of("/absolute/subdir/user"),
+                        Path.of("/absolute/subdir/library"),
+                        Path.of("/absolute/subdir"),
+                        Path.of("/mnt/webdav")),
+                database.getFileDirectories(fileDirPrefs));
+    }
+
+    @Test
+    void webDavFileDirectoryIsNotADestinationForNewFiles() {
+        when(fileDirPrefs.getUserAndHost()).thenReturn("user-host");
+        when(fileDirPrefs.shouldStoreFilesRelativeToBibFile()).thenReturn(false);
+
+        BibDatabaseContext database = new BibDatabaseContext();
+        database.getMetaData().setWebDavFileDirectory("user-host", "/mnt/webdav");
+
+        assertEquals(List.of(Path.of("/mnt/webdav")), database.getFileDirectories(fileDirPrefs));
+        assertEquals(List.of(), database.getFileDirectoriesForNewFiles(fileDirPrefs));
+    }
+
+    @Test
+    void webDavFileDirectoryPrecedesOverlappingParentDirectory() {
+        when(fileDirPrefs.getUserAndHost()).thenReturn("user-host");
+
+        BibDatabaseContext database = new BibDatabaseContext();
+        database.setDatabasePath(Path.of("/mnt/biblio.bib"));
+        database.getMetaData().setWebDavFileDirectory("user-host", "/mnt/webdav");
+
+        assertEquals(List.of(Path.of("/mnt/webdav"), Path.of("/mnt")), database.getFileDirectories(fileDirPrefs));
+        assertEquals(List.of(Path.of("/mnt")), database.getFileDirectoriesForNewFiles(fileDirPrefs));
+    }
+
+    @Test
     void typeBasedOnDefaultBiblatex() {
         BibDatabaseContext bibDatabaseContext = new BibDatabaseContext(new BibDatabase(), new MetaData());
         assertEquals(BibDatabaseMode.BIBLATEX, bibDatabaseContext.getMode());

@@ -27,6 +27,22 @@ class MetaDataTest {
     }
 
     @Test
+    void storesWebDavFileDirectoryPerUserHost() {
+        metaData.setWebDavFileDirectory("user-host", "/mnt/webdav");
+
+        assertEquals(Optional.of("/mnt/webdav"), metaData.getWebDavFileDirectory("user-host"));
+        assertEquals(Optional.empty(), metaData.getWebDavFileDirectory("other-host"));
+    }
+
+    @Test
+    void clearsWebDavFileDirectoryPerUserHost() {
+        metaData.setWebDavFileDirectory("user-host", "/mnt/webdav");
+        metaData.clearWebDavFileDirectory("user-host");
+
+        assertEquals(Optional.empty(), metaData.getWebDavFileDirectory("user-host"));
+    }
+
+    @Test
     void storesAiLibraryId() {
         metaData.setAiLibraryId("test-ai-library-id");
 

@@ -3,13 +3,14 @@ parent: Requirements
 ---
 # Moving Linked Files Between Configured Directories
 
-JabRef supports up to four directory types for storing linked files (see [Directories for Files](https://docs.jabref.org/finding-sorting-and-cleaning-entries/filelinks#directories-for-files)):
+JabRef supports up to five directory types for storing linked files (see [Directories for Files](https://docs.jabref.org/finding-sorting-and-cleaning-entries/filelinks#directories-for-files)):
 
 | ID  | Name                            | Scope                                                                                 |
 |-----|---------------------------------|---------------------------------------------------------------------------------------|
 | MD  | Main file directory             | Global preference; current user only                                                  |
 | LSD | Library-specific file directory | Per library; all users of that library                                                |
 | USD | User-specific file directory    | Per user per library; current user only                                               |
+| WDD | WebDAV file directory           | Per user and host per library; additional lookup root                                 |
 | LD  | Next to library                 | Global preference "store files next to library"; files live alongside the `.bib` file |
 
 Issue: [#12287](https://github.com/JabRef/jabref/issues/12287)
@@ -17,7 +18,7 @@ Issue: [#12287](https://github.com/JabRef/jabref/issues/12287)
 ## Context menu shows all configured directories as move targets
 `req~jabgui.linked-files.move.context-menu-all-directories~1`
 
-The right-click context menu for a linked file must display one menu item per configured directory type (MD, LSD, USD, LD).
+The right-click context menu for a linked file must display one menu item per configured directory type (MD, LSD, USD, WDD, LD).
 Each item is labelled as follows:
 
 | Directory | Menu label                                   |
@@ -25,6 +26,7 @@ Each item is labelled as follows:
 | MD        | Move file to main file directory             |
 | LSD       | Move file to library-specific file directory |
 | USD       | Move file to user-specific file directory    |
+| WDD       | Move file to WebDAV file directory           |
 | LD        | Move file next to library                    |
 
 Only directories that are actually configured appear in the menu.

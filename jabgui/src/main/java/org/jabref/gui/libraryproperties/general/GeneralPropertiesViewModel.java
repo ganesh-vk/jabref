@@ -42,10 +42,12 @@ public class GeneralPropertiesViewModel implements PropertiesTabViewModel {
     private final SimpleObjectProperty<BibDatabaseMode> selectedDatabaseModeProperty = new SimpleObjectProperty<>(BibDatabaseMode.BIBLATEX);
     private final StringProperty librarySpecificDirectoryProperty = new SimpleStringProperty("");
     private final StringProperty userSpecificFileDirectoryProperty = new SimpleStringProperty("");
+    private final StringProperty webDavFileDirectoryProperty = new SimpleStringProperty("");
     private final StringProperty laTexFileDirectoryProperty = new SimpleStringProperty("");
 
     private final Validator librarySpecificFileDirectoryValidator;
     private final Validator userSpecificFileDirectoryValidator;
+    private final Validator webDavFileDirectoryValidator;
     private final Validator laTexFileDirectoryValidator;
 
     private final DialogService dialogService;
@@ -70,6 +72,11 @@ public class GeneralPropertiesViewModel implements PropertiesTabViewModel {
                 mainDirectoryPath -> validateDirectory(mainDirectoryPath, "User-specific")
         );
 
+        webDavFileDirectoryValidator = new FunctionBasedValidator<>(
+                webDavFileDirectoryProperty,
+                mainDirectoryPath -> validateDirectory(mainDirectoryPath, "WebDAV")
+        );
+
         laTexFileDirectoryValidator = new FunctionBasedValidator<>(
                 laTexFileDirectoryProperty,
                 mainDirectoryPath -> validateDirectory(mainDirectoryPath, "LaTeX")
@@ -85,6 +92,7 @@ public class GeneralPropertiesViewModel implements PropertiesTabViewModel {
         selectedDatabaseModeProperty.setValue(metaData.getMode().orElse(BibDatabaseMode.BIBLATEX));
         librarySpecificDirectoryProperty.setValue(metaData.getLibrarySpecificFileDirectory().orElse("").trim());
         userSpecificFileDirectoryProperty.setValue(metaData.getUserFileDirectory(preferences.getFilePreferences().getUserAndHost()).orElse("").trim());
+        webDavFileDirectoryProperty.setValue(metaData.getWebDavFileDirectory(preferences.getFilePreferences().getUserAndHost()).orElse("").trim());
         laTexFileDirectoryProperty.setValue(metaData.getLatexFileDirectory(preferences.getFilePreferences().getUserAndHost()).map(Path::toString).orElse(""));
     }
 
@@ -109,6 +117,13 @@ public class GeneralPropertiesViewModel implements PropertiesTabViewModel {
             newMetaData.setUserFileDirectory(preferences.getFilePreferences().getUserAndHost(), userSpecificFileDirectory);
         }
 
+        String webDavFileDirectory = webDavFileDirectoryProperty.getValue();
+        if (webDavFileDirectory.isEmpty()) {
+            newMetaData.clearWebDavFileDirectory(preferences.getFilePreferences().getUserAndHost());
+        } else if (webDavFileDirectoryStatus().isValid()) {
+            newMetaData.setWebDavFileDirectory(preferences.getFilePreferences().getUserAndHost(), webDavFileDirectory);
+        }
+
         String latexFileDirectory = laTexFileDirectoryProperty.getValue();
         if (latexFileDirectory.isEmpty()) {
             newMetaData.clearLatexFileDirectory(preferences.getFilePreferences().getUserAndHost());
@@ -131,14 +146,20 @@ public class GeneralPropertiesViewModel implements PropertiesTabViewModel {
         return laTexFileDirectoryValidator.getValidationStatus();
     }
 
+    ValidationStatus webDavFileDirectoryStatus() {
+        return webDavFileDirectoryValidator.getValidationStatus();
+    }
+
     @Override
     public boolean validateSettings() {
         ValidationStatus librarySpecificFileDirectoryStatus = librarySpecificFileDirectoryStatus();
         ValidationStatus userSpecificFileDirectoryStatus = userSpecificFileDirectoryStatus();
+        ValidationStatus webDavFileDirectoryStatus = webDavFileDirectoryStatus();
         ValidationStatus laTexFileDirectoryStatus = laTexFileDirectoryStatus();
 
         return promptUserToConfirmAction(librarySpecificFileDirectoryStatus) &&
                 promptUserToConfirmAction(userSpecificFileDirectoryStatus) &&
+                promptUserToConfirmAction(webDavFileDirectoryStatus) &&
                 promptUserToConfirmAction(laTexFileDirectoryStatus);
     }
 
@@ -160,7 +181,14 @@ public class GeneralPropertiesViewModel implements PropertiesTabViewModel {
         DirectoryDialogConfiguration directoryDialogConfiguration = new DirectoryDialogConfiguration.Builder()
                 .withInitialDirectory(getBrowseDirectory(laTexFileDirectoryProperty.getValue())).build();
         dialogService.showDirectorySelectionDialog(directoryDialogConfiguration)
-                     .ifPresent(dir -> setDirectory(laTexFileDirectoryProperty, dir));
+                      .ifPresent(dir -> setDirectory(laTexFileDirectoryProperty, dir));
+    }
+
+    public void browseWebDavDir() {
+        DirectoryDialogConfiguration directoryDialogConfiguration = new DirectoryDialogConfiguration.Builder()
+                .withInitialDirectory(getBrowseDirectory(webDavFileDirectoryProperty.getValue())).build();
+        dialogService.showDirectorySelectionDialog(directoryDialogConfiguration)
+                     .ifPresent(dir -> setDirectory(webDavFileDirectoryProperty, dir));
     }
 
     public BooleanProperty encodingDisableProperty() {
@@ -193,6 +221,10 @@ public class GeneralPropertiesViewModel implements PropertiesTabViewModel {
 
     public StringProperty laTexFileDirectoryProperty() {
         return this.laTexFileDirectoryProperty;
+    }
+
+    public StringProperty webDavFileDirectoryProperty() {
+        return webDavFileDirectoryProperty;
     }
 
     private Path getBrowseDirectory(String configuredDir) {

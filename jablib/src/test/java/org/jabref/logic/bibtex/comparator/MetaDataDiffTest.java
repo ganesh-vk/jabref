@@ -3,6 +3,8 @@ package org.jabref.logic.bibtex.comparator;
 import java.util.List;
 import java.util.Optional;
 
+import org.jabref.logic.citationkeypattern.CitationKeyPattern;
+import org.jabref.logic.citationkeypattern.GlobalCitationKeyPatterns;
 import org.jabref.logic.groups.GroupsFactory;
 import org.jabref.model.entry.field.StandardField;
 import org.jabref.model.groups.ExplicitGroup;
@@ -22,6 +24,21 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 @ResourceLock("Localization.lang")
 @Execution(ExecutionMode.SAME_THREAD)
 class MetaDataDiffTest {
+
+    @Test
+    void detectsWebDavFileDirectoryChange() {
+        MetaData original = new MetaData();
+        MetaData changed = new MetaData();
+        changed.setWebDavFileDirectory("user-host", "/mnt/webdav");
+
+        MetaDataDiff diff = MetaDataDiff.compare(original, changed).orElseThrow();
+
+        assertEquals(List.of(MetaDataDiff.DifferenceType.WEBDAV_FILE_DIRECTORY),
+                diff.getDifferences(new GlobalCitationKeyPatterns(CitationKeyPattern.NULL_CITATION_KEY_PATTERN)).stream()
+                    .map(MetaDataDiff.Difference::differenceType)
+                    .toList());
+    }
+
     @Test
     void compareWithSameContentSelectorsDoesNotReportAnyDiffs() {
         MetaData one = new MetaData();

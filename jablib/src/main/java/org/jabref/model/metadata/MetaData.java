@@ -51,6 +51,7 @@ public class MetaData {
     public static final String GROUPS_SEARCH_SYNTAX_VERSION = "groups-search-syntax-version";
     public static final String FILE_DIRECTORY = "fileDirectory";
     public static final String FILE_DIRECTORY_LATEX = "fileDirectoryLatex";
+    public static final String FILE_DIRECTORY_WEBDAV = "webDavFileDirectory";
     public static final String PROTECTED_FLAG_META = "protectedFlag";
     public static final String SELECTOR_META_PREFIX = "selector_";
     public static final String BIBDESK_STATIC_FLAG = "BibDesk Static Groups";
@@ -65,6 +66,7 @@ public class MetaData {
     private final Map<EntryType, String> citeKeyPatterns = new HashMap<>(); // <BibType, Pattern>
     private final Map<String, String> userFileDirectory = new HashMap<>(); // <User, FilePath>
     private final Map<String, String> latexFileDirectory = new HashMap<>(); // <User-Host, FilePath>
+    private final Map<String, String> webDavFileDirectory = new HashMap<>(); // <User-Host, FilePath>
 
     private final ObjectProperty<GroupTreeNode> groupsRoot = new SimpleObjectProperty<>(null);
     private final OptionalBinding<GroupTreeNode> groupsRootBinding = new OptionalWrapper<>(groupsRoot);
@@ -275,6 +277,20 @@ public class MetaData {
         postChange();
     }
 
+    public Optional<String> getWebDavFileDirectory(String userHostString) {
+        return Optional.ofNullable(webDavFileDirectory.get(userHostString));
+    }
+
+    public void setWebDavFileDirectory(@NonNull String userHostString, @NonNull String path) {
+        webDavFileDirectory.put(userHostString, path);
+        postChange();
+    }
+
+    public void clearWebDavFileDirectory(String userHostString) {
+        webDavFileDirectory.remove(userHostString);
+        postChange();
+    }
+
     public Optional<Path> getLatexFileDirectory(String userHostString) {
         return Optional.ofNullable(latexFileDirectory.get(userHostString)).map(Path::of);
     }
@@ -370,6 +386,10 @@ public class MetaData {
         return Collections.unmodifiableMap(latexFileDirectory);
     }
 
+    public Map<String, String> getWebDavFileDirectories() {
+        return Collections.unmodifiableMap(webDavFileDirectory);
+    }
+
     public Map<String, List<String>> getUnknownMetaData() {
         return Collections.unmodifiableMap(unknownMetaData);
     }
@@ -394,6 +414,7 @@ public class MetaData {
                 && Objects.equals(citeKeyPatterns, that.citeKeyPatterns)
                 && Objects.equals(userFileDirectory, that.userFileDirectory)
                 && Objects.equals(latexFileDirectory, that.latexFileDirectory)
+                && Objects.equals(webDavFileDirectory, that.webDavFileDirectory)
                 && Objects.equals(defaultCiteKeyPattern, that.defaultCiteKeyPattern)
                 && Objects.equals(saveActions, that.saveActions)
                 && (mode == that.mode)
@@ -406,12 +427,12 @@ public class MetaData {
     @Override
     public int hashCode() {
         return Objects.hash(isProtected, groupsRoot.getValue(), encoding, encodingExplicitlySupplied, saveOrder, citeKeyPatterns, userFileDirectory,
-                latexFileDirectory, defaultCiteKeyPattern, saveActions, mode, librarySpecificFileDirectory, contentSelectors, versionDBStructure, aiLibraryId);
+                latexFileDirectory, webDavFileDirectory, defaultCiteKeyPattern, saveActions, mode, librarySpecificFileDirectory, contentSelectors, versionDBStructure, aiLibraryId);
     }
 
     @Override
     public String toString() {
-        return "MetaData [citeKeyPatterns=" + citeKeyPatterns + ", userFileDirectory=" + userFileDirectory + ", laTexFileDirectory=" + latexFileDirectory + ", groupsRoot=" + groupsRoot + ", encoding=" + encoding + ", saveOrderConfig=" + saveOrder + ", defaultCiteKeyPattern=" + defaultCiteKeyPattern + ", saveActions=" + saveActions + ", mode=" + mode + ", isProtected=" + isProtected + ", librarySpecificFileDirectory=" + librarySpecificFileDirectory + ", contentSelectors=" + contentSelectors + ", encodingExplicitlySupplied=" + encodingExplicitlySupplied + ", VersionDBStructure=" + versionDBStructure + ", aiLibraryId=" + aiLibraryId + "]";
+        return "MetaData [citeKeyPatterns=" + citeKeyPatterns + ", userFileDirectory=" + userFileDirectory + ", laTexFileDirectory=" + latexFileDirectory + ", webDavFileDirectory=" + webDavFileDirectory + ", groupsRoot=" + groupsRoot + ", encoding=" + encoding + ", saveOrderConfig=" + saveOrder + ", defaultCiteKeyPattern=" + defaultCiteKeyPattern + ", saveActions=" + saveActions + ", mode=" + mode + ", isProtected=" + isProtected + ", librarySpecificFileDirectory=" + librarySpecificFileDirectory + ", contentSelectors=" + contentSelectors + ", encodingExplicitlySupplied=" + encodingExplicitlySupplied + ", VersionDBStructure=" + versionDBStructure + ", aiLibraryId=" + aiLibraryId + "]";
     }
 
     public Optional<Path> getBlgFilePath(String user) {

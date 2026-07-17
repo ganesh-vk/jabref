@@ -31,22 +31,28 @@ public class GeneralPropertiesView extends AbstractPropertiesTabView<GeneralProp
     @FXML private ComboBox<BibDatabaseMode> databaseMode;
     @FXML private TextField librarySpecificFileDirectory;
     @FXML private TextField userSpecificFileDirectory;
+    @FXML private TextField webDavFileDirectory;
     @FXML private TextField latexFileDirectory;
     @FXML private Button libSpecificFileDirSwitchId;
     @FXML private Button userSpecificFileDirSwitchId;
+    @FXML private Button webDavFileDirSwitchId;
     @FXML private Button laTexSpecificFileDirSwitchId;
     @FXML private JabRefIconView libSpecificFileDirSwitchIcon;
     @FXML private JabRefIconView userSpecificFileDirSwitchIcon;
+    @FXML private JabRefIconView webDavFileDirSwitchIcon;
     @FXML private JabRefIconView laTexSpecificFileDirSwitchIcon;
     @FXML private Tooltip libSpecificFileDirSwitchTooltip;
     @FXML private Tooltip userSpecificFileDirSwitchTooltip;
+    @FXML private Tooltip webDavFileDirSwitchTooltip;
     @FXML private Tooltip laTexSpecificFileDirSwitchTooltip;
     @FXML private Tooltip userSpecificFileDirectoryTooltip;
+    @FXML private Tooltip webDavFileDirectoryTooltip;
     @FXML private Tooltip latexFileDirectoryTooltip;
     @FXML private Tooltip librarySpecificFileDirectoryTooltip;
 
     private final ControlsFxVisualizer librarySpecificFileDirectoryValidationVisualizer = new ControlsFxVisualizer();
     private final ControlsFxVisualizer userSpecificFileDirectoryValidationVisualizer = new ControlsFxVisualizer();
+    private final ControlsFxVisualizer webDavFileDirectoryValidationVisualizer = new ControlsFxVisualizer();
     private final ControlsFxVisualizer latexFileDirectoryValidationVisualizer = new ControlsFxVisualizer();
     private final String switchToRelativeText = Localization.lang("Switch to relative path: converts the path to a relative path.");
     private final String switchToAbsoluteText = Localization.lang("Switch to absolute path: converts the path to an absolute path.");
@@ -86,17 +92,21 @@ public class GeneralPropertiesView extends AbstractPropertiesTabView<GeneralProp
         librarySpecificFileDirectory.textProperty().bindBidirectional(viewModel.librarySpecificDirectoryProperty());
 
         userSpecificFileDirectory.textProperty().bindBidirectional(viewModel.userSpecificFileDirectoryProperty());
+        webDavFileDirectory.textProperty().bindBidirectional(viewModel.webDavFileDirectoryProperty());
         latexFileDirectory.textProperty().bindBidirectional(viewModel.laTexFileDirectoryProperty());
 
         userSpecificFileDirectoryTooltip.setText(Localization.lang("User-specific file directory: %0", preferences.getFilePreferences().getUserAndHost()));
         userSpecificFileDirectory.setTooltip(userSpecificFileDirectoryTooltip);
+        webDavFileDirectoryTooltip.setText(Localization.lang("WebDAV file directory: %0", preferences.getFilePreferences().getUserAndHost()));
 
         librarySpecificFileDirectoryValidationVisualizer.setDecoration(new IconValidationDecorator());
         userSpecificFileDirectoryValidationVisualizer.setDecoration(new IconValidationDecorator());
+        webDavFileDirectoryValidationVisualizer.setDecoration(new IconValidationDecorator());
         latexFileDirectoryValidationVisualizer.setDecoration(new IconValidationDecorator());
 
         libSpecificFileDirSwitchId.setDisable(this.databaseContext.getDatabasePath().isEmpty());
         userSpecificFileDirSwitchId.setDisable(this.databaseContext.getDatabasePath().isEmpty());
+        webDavFileDirSwitchId.setDisable(this.databaseContext.getDatabasePath().isEmpty());
         laTexSpecificFileDirSwitchId.setDisable(this.databaseContext.getDatabasePath().isEmpty());
 
         librarySpecificFileDirectory.textProperty().addListener((_, _, newValue) -> {
@@ -112,6 +122,12 @@ public class GeneralPropertiesView extends AbstractPropertiesTabView<GeneralProp
             userSpecificFileDirSwitchTooltip.setText(isAbsolute ? switchToRelativeText : switchToAbsoluteText);
         });
 
+        webDavFileDirectory.textProperty().addListener((_, _, newValue) -> {
+            boolean isAbsolute = Path.of(newValue).isAbsolute();
+            webDavFileDirSwitchIcon.setGlyph(isAbsolute ? RELATIVE_PATH : ABSOLUTE_PATH);
+            webDavFileDirSwitchTooltip.setText(isAbsolute ? switchToRelativeText : switchToAbsoluteText);
+        });
+
         latexFileDirectory.textProperty().addListener((_, _, newValue) -> {
             boolean isAbsolute = Path.of(newValue).isAbsolute();
             laTexSpecificFileDirSwitchIcon.setGlyph(isAbsolute ? RELATIVE_PATH : ABSOLUTE_PATH);
@@ -123,6 +139,7 @@ public class GeneralPropertiesView extends AbstractPropertiesTabView<GeneralProp
         Platform.runLater(() -> {
             librarySpecificFileDirectoryValidationVisualizer.initVisualization(viewModel.librarySpecificFileDirectoryStatus(), librarySpecificFileDirectory);
             userSpecificFileDirectoryValidationVisualizer.initVisualization(viewModel.userSpecificFileDirectoryStatus(), userSpecificFileDirectory);
+            webDavFileDirectoryValidationVisualizer.initVisualization(viewModel.webDavFileDirectoryStatus(), webDavFileDirectory);
             latexFileDirectoryValidationVisualizer.initVisualization(viewModel.laTexFileDirectoryStatus(), latexFileDirectory);
 
             librarySpecificFileDirectory.requestFocus();
@@ -140,6 +157,11 @@ public class GeneralPropertiesView extends AbstractPropertiesTabView<GeneralProp
     }
 
     @FXML
+    public void browseWebDavFileDirectory() {
+        viewModel.browseWebDavDir();
+    }
+
+    @FXML
     void browseLatexFileDirectory() {
         viewModel.browseLatexDir();
     }
@@ -152,6 +174,11 @@ public class GeneralPropertiesView extends AbstractPropertiesTabView<GeneralProp
     @FXML
     void userSpecificFileDirPathSwitch() {
         viewModel.togglePath(viewModel.userSpecificFileDirectoryProperty());
+    }
+
+    @FXML
+    void webDavFileDirPathSwitch() {
+        viewModel.togglePath(viewModel.webDavFileDirectoryProperty());
     }
 
     @FXML

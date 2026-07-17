@@ -157,4 +157,15 @@ public class MetaDataParserTest {
 
         assertEquals(Optional.of(Path.of("C:\\Path\\To\\Latex")), parsed.getLatexFileDirectory(userHost));
     }
+
+    @Test
+    void parsesWebDavFileDirectoryForUserHost() throws ParseException {
+        String userHost = "user-host";
+        String rawKey = "webDavFileDirectory-" + userHost;
+
+        MetaDataParser parser = new MetaDataParser(new DummyFileUpdateMonitor());
+        MetaData parsed = parser.parse(Map.of(rawKey, "/mnt/webdav;"), ',', "userAndHost");
+
+        assertEquals(Optional.of("/mnt/webdav"), parsed.getWebDavFileDirectory(userHost));
+    }
 }
