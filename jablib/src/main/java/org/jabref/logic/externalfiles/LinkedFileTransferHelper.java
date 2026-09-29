@@ -145,10 +145,10 @@ public class LinkedFileTransferHelper {
                     } else {
                         LOGGER.debug("Moving file from {} to {}", sourcePath, linkedFileAsPath);
                         assert transferInformation.transferMode() == TransferMode.MOVE;
-                        Files.move(sourcePath, linkedFileAsPath, StandardCopyOption.ATOMIC_MOVE);
+                        LinkedFileHandler.moveFileWithFallback(sourcePath, linkedFileAsPath);
                     }
                 } catch (IOException e) {
-                    LOGGER.error("Could not copy file from {} to {}", sourcePath, linkedFileAsPath, e);
+                    LOGGER.error("Could not transfer file from {} to {}", sourcePath, linkedFileAsPath, e);
                     linkedFiles.add(linkedFile);
                 }
             }
@@ -180,6 +180,6 @@ public class LinkedFileTransferHelper {
     /// @param filePreferences File preferences for the context
     /// @return Optional containing the primary directory path, or empty if none found
     static Optional<Path> getPrimaryPath(BibDatabaseContext context, FilePreferences filePreferences) {
-        return context.getFileDirectories(filePreferences).stream().findFirst();
+        return context.getFileDirectoriesForNewFiles(filePreferences).stream().findFirst();
     }
 }

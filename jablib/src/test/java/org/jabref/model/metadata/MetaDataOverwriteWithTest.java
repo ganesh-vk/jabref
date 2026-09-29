@@ -93,6 +93,7 @@ class MetaDataOverwriteWithTest {
         metaData.markAsProtected();
         metaData.setUserFileDirectory("user-host", "/tmp/user");
         metaData.setLatexFileDirectory("user-host", "/tmp/latex");
+        metaData.setRemoteFileDirectory("user-host", "/mnt/remote");
         metaData.setEncoding(StandardCharsets.ISO_8859_1);
         metaData.setEncodingExplicitlySupplied(true);
         metaData.putUnknownMetaDataItem("unknown", List.of("value"));

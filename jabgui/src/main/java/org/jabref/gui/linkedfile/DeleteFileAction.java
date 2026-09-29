@@ -101,15 +101,7 @@ public class DeleteFileAction extends SimpleCommand {
             } else {
                 LOGGER.warn("Could not find file {}", linkedFile.getLink());
                 dialogService.notify(Localization.lang("Error accessing file '%0'.", linkedFile.getLink()));
-
-                // We can trigger deletion of "all" files from the entry (no deletion on disk), because in this case, there is only one files
-                assert numberOfLinkedFiles == 1;
-                deleteFiles(false);
-
-                // Deleting a non-existing file is a success
-                success = true;
-
-                return;
+                dialogTitle = Localization.lang("Delete '%0'", linkedFile.getLink());
             }
         }
 
@@ -164,27 +156,26 @@ public class DeleteFileAction extends SimpleCommand {
         // default: We have a success
         success = true;
         for (LinkedFileViewModel fileViewModel : filesToDelete) {
-            if (!fileViewModel.getFile().isOnlineLink() && deleteFromDisk) {
-                deleteFileHelper(databaseContext, fileViewModel.getFile());
-            }
-            if (viewModel != null) {
+            boolean fileDeleted = !deleteFromDisk
+                    || fileViewModel.getFile().isOnlineLink()
+                    || deleteFileHelper(databaseContext, fileViewModel.getFile());
+            if (fileDeleted && viewModel != null) {
                 viewModel.removeFileLink(fileViewModel);
             }
+            success &= fileDeleted;
         }
     }
 
     /// Helper method to delete the specified file from disk
     ///
     /// @param linkedFile The LinkedFile (file which linked to an entry) to be deleted from disk
-    private void deleteFileHelper(BibDatabaseContext databaseContext, LinkedFile linkedFile) {
+    private boolean deleteFileHelper(BibDatabaseContext databaseContext, LinkedFile linkedFile) {
         Optional<Path> file = linkedFile.findIn(databaseContext, filePreferences);
 
         if (file.isEmpty()) {
             LOGGER.warn("Could not find file {}", linkedFile.getLink());
             dialogService.notify(Localization.lang("Error accessing file '%0'.", linkedFile.getLink()));
-            // Deleting a non-existing file is a success
-            success = true;
-            return;
+            return false;
         }
 
         Path theFile = file.get();
@@ -193,16 +184,19 @@ public class DeleteFileAction extends SimpleCommand {
             LOGGER.debug("filePreferences.moveToTrash() = {}", preferencesMoveToTrash);
             if (preferencesMoveToTrash) {
                 LOGGER.debug("Moving to trash: {}", theFile);
-                NativeDesktop.get().moveToTrash(theFile);
+                if (!NativeDesktop.get().moveToTrash(theFile)) {
+                    dialogService.showErrorDialogAndWait(Localization.lang("Cannot delete file '%0'", theFile), Localization.lang("Could not move the file to the trash."));
+                    return false;
+                }
             } else {
                 LOGGER.debug("Deleting: {}", theFile);
                 Files.delete(theFile);
             }
-            success = true;
+            return true;
         } catch (IOException ex) {
-            success = false;
             dialogService.showErrorDialogAndWait(Localization.lang("Cannot delete file '%0'", theFile), Localization.lang("File permission error"));
             LOGGER.warn("Error while deleting: {}", linkedFile, ex);
+            return false;
         }
     }
 

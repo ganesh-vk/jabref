@@ -182,4 +182,15 @@ public class MetaDataParserTest {
 
         assertEquals(Optional.of(Path.of("C:\\Path\\To\\Latex")), parsed.getLatexFileDirectory(userHost));
     }
+
+    @Test
+    void parsesRemoteFileDirectoryForUserHost() throws ParseException {
+        String userHost = "user-host";
+        String rawKey = "remoteFileDirectory-" + userHost;
+
+        MetaDataParser parser = new MetaDataParser(new DummyFileUpdateMonitor());
+        MetaData parsed = parser.parse(Map.of(rawKey, "/mnt/remote;"), ',', "userAndHost");
+
+        assertEquals(Optional.of("/mnt/remote"), parsed.getRemoteFileDirectory(userHost));
+    }
 }

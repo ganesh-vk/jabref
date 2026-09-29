@@ -130,6 +130,51 @@ class BibDatabaseContextTest {
     }
 
     @Test
+    /// [utest->req~logic.externalfiles.remote-mounted-directory~1]
+    void getRemoteFileDirectoryAfterExistingDirectories() {
+        when(fileDirPrefs.getUserAndHost()).thenReturn("user-host");
+        Path file = Path.of("/absolute/subdir/biblio.bib");
+
+        BibDatabaseContext database = new BibDatabaseContext();
+        database.setDatabasePath(file);
+        database.getMetaData().setUserFileDirectory("user-host", "user");
+        database.getMetaData().setLibrarySpecificFileDirectory("library");
+        database.getMetaData().setRemoteFileDirectory("user-host", "/mnt/remote");
+
+        assertEquals(List.of(
+                        Path.of("/absolute/subdir/user"),
+                        Path.of("/absolute/subdir/library"),
+                        Path.of("/absolute/subdir"),
+                        Path.of("/mnt/remote")),
+                database.getFileDirectories(fileDirPrefs));
+    }
+
+    @Test
+    void remoteFileDirectoryIsNotADestinationForNewFiles() {
+        when(fileDirPrefs.getUserAndHost()).thenReturn("user-host");
+        when(fileDirPrefs.shouldStoreFilesRelativeToBibFile()).thenReturn(false);
+
+        BibDatabaseContext database = new BibDatabaseContext();
+        database.getMetaData().setRemoteFileDirectory("user-host", "/mnt/remote");
+
+        assertEquals(List.of(Path.of("/mnt/remote")), database.getFileDirectories(fileDirPrefs));
+        assertEquals(List.of(), database.getFileDirectoriesForNewFiles(fileDirPrefs));
+    }
+
+    @Test
+    void remoteFileDirectoryPrecedesOverlappingParentDirectory() {
+        when(fileDirPrefs.getUserAndHost()).thenReturn("user-host");
+
+        BibDatabaseContext database = new BibDatabaseContext();
+        database.getMetaData().setUserFileDirectory("user-host", "/mnt");
+        database.getMetaData().setLibrarySpecificFileDirectory("/home/local");
+        database.getMetaData().setRemoteFileDirectory("user-host", "/mnt/remote");
+
+        assertEquals(List.of(Path.of("/home/local"), Path.of("/mnt/remote"), Path.of("/mnt")), database.getFileDirectories(fileDirPrefs));
+        assertEquals(List.of(Path.of("/mnt"), Path.of("/home/local")), database.getFileDirectoriesForNewFiles(fileDirPrefs));
+    }
+
+    @Test
     void typeBasedOnDefaultBiblatex() {
         BibDatabaseContext bibDatabaseContext = new BibDatabaseContext(new BibDatabase(), new MetaData());
         assertEquals(BibDatabaseMode.BIBLATEX, bibDatabaseContext.getMode());

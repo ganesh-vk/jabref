@@ -2016,11 +2016,13 @@ class BibtexParserTest {
         ParserResult result = parser.parse(
                 Reader.of("@comment{jabref-meta: fileDirectory:\\\\Literature\\\\;}"
                         + "@comment{jabref-meta: fileDirectory-defaultOwner-user:D:\\\\Documents;}"
-                        + "@comment{jabref-meta: fileDirectoryLatex-defaultOwner-user:D:\\\\Latex;}"));
+                        + "@comment{jabref-meta: fileDirectoryLatex-defaultOwner-user:D:\\\\Latex;}"
+                        + "@comment{jabref-meta: remoteFileDirectory-defaultOwner-user:R:\\\\Literature;}"));
 
-        assertEquals("\\Literature\\", result.getMetaData().getLibrarySpecificFileDirectory().get());
-        assertEquals("D:\\Documents", result.getMetaData().getUserFileDirectory("defaultOwner-user").get());
-        assertEquals("D:\\Latex", result.getMetaData().getLatexFileDirectory("defaultOwner-user").get().toString());
+        assertEquals(Optional.of("\\Literature\\"), result.getMetaData().getLibrarySpecificFileDirectory());
+        assertEquals(Optional.of("D:\\Documents"), result.getMetaData().getUserFileDirectory("defaultOwner-user"));
+        assertEquals(Optional.of(Path.of("D:\\Latex")), result.getMetaData().getLatexFileDirectory("defaultOwner-user"));
+        assertEquals(Optional.of("R:\\Literature"), result.getMetaData().getRemoteFileDirectory("defaultOwner-user"));
     }
 
     @ParameterizedTest

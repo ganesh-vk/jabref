@@ -19,7 +19,6 @@ import org.jabref.model.database.BibDatabaseContext;
 import org.jabref.model.database.FileDirectories;
 
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 @NullMarked
 class MoveFileSubmenuFactory {
@@ -58,21 +57,21 @@ class MoveFileSubmenuFactory {
         directories.put(Localization.lang("Main file directory: %0"), mainFileDirectory);
         directories.put(Localization.lang("Library-specific file directory: %0"), fileDirectories.getLibraryDirectoryOpt());
         directories.put(Localization.lang("User-specific file directory: %0"), fileDirectories.getUserDirectoryOpt());
+        directories.put(Localization.lang("Remote file directory: %0"), fileDirectories.getRemoteDirectoryOpt());
         directories.put(Localization.lang("Next to library file: %0"), databaseContext.getDatabaseDirectory());
 
         Menu menu = actionFactory.createMenu(operation.getAction());
         for (Map.Entry<String, Optional<Path>> entry : directories.entrySet()) {
-            Path targetDirectory = entry.getValue().orElse(null);
-            String label = entry.getValue()
-                                // Dirty hack: String formatted expects %s, Localization.lang %0 as placeholders.
-                                // Since localization strings are reused, we replace here
-                                .map(path -> entry.getKey().replace("%0", "%s").formatted(path))
-                                .orElseGet(() -> entry.getKey().replace("%0", "%s").formatted(Localization.lang("Unavailable")));
-            menu.getItems().add(actionFactory.createCustomMenuItem(
-                    operation.getAction(),
-                    new MoveFileCommand(targetDirectory, linkedFileViewModels, operation),
-                    label
-            ));
+            entry.getValue().ifPresent(targetDirectory -> {
+                // Dirty hack: String formatted expects %s, Localization.lang %0 as placeholders.
+                // Since localization strings are reused, we replace here
+                String label = entry.getKey().replace("%0", "%s").formatted(targetDirectory);
+                menu.getItems().add(actionFactory.createCustomMenuItem(
+                        operation.getAction(),
+                        new MoveFileCommand(targetDirectory, linkedFileViewModels, operation),
+                        label
+                ));
+            });
         }
         return menu;
     }
@@ -95,11 +94,11 @@ class MoveFileSubmenuFactory {
             }
         }
 
-        private final @Nullable Path targetDirectory;
+        private final Path targetDirectory;
         private final List<LinkedFileViewModel> linkedFileViewModels;
         private final Operation operation;
 
-        private MoveFileCommand(@Nullable Path targetDirectory,
+        private MoveFileCommand(Path targetDirectory,
                                 List<LinkedFileViewModel> linkedFileViewModels,
                                 Operation operation) {
             this.targetDirectory = targetDirectory;
@@ -109,13 +108,9 @@ class MoveFileSubmenuFactory {
             setExecutable(isMenuItemExecutable(targetDirectory, linkedFileViewModels, operation));
         }
 
-        private boolean isMenuItemExecutable(@Nullable Path targetDirectory,
-                                             List<LinkedFileViewModel> linkedFileViewModels,
-                                             Operation operation) {
-            if (targetDirectory == null) {
-                return false;
-            }
-
+        private boolean isMenuItemExecutable(Path targetDirectory,
+                                              List<LinkedFileViewModel> linkedFileViewModels,
+                                              Operation operation) {
             return switch (operation) {
                 case SINGLE_MOVE -> {
                     LinkedFileViewModel linkedFileViewModel = linkedFileViewModels.getFirst();
@@ -135,10 +130,6 @@ class MoveFileSubmenuFactory {
 
         @Override
         public void execute() {
-            if (targetDirectory == null) {
-                return;
-            }
-
             switch (operation) {
                 case SINGLE_MOVE ->
                         linkedFileViewModels.getFirst().moveToDirectory(targetDirectory);

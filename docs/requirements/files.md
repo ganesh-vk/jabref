@@ -47,4 +47,21 @@ Closing the side pane releases the displayed PDF document.
 
 Needs: impl, utest
 
+## Resolve linked files from an OS-mounted remote directory
+`req~logic.externalfiles.remote-mounted-directory~1`
+
+Users can configure one operating-system-mounted remote directory per user, host, and library.
+JabRef must search local file directories before the remote directory when relativizing and resolving linked files, except that a more specific nested root precedes its parent directory.
+The remote directory must not be selected automatically as the destination for downloaded or copied files, but users can explicitly move linked files to and from it.
+Moved or renamed files must retain an unambiguous link, even when a different configured directory contains the same filename.
+File moves between file systems must fall back to copying and deleting the source.
+Potentially slow linked-file moves must run outside the JavaFX application thread.
+The resulting link must be applied to the entry on the JavaFX application thread after the move succeeds.
+If a linked file cannot be accessed for deletion, JabRef must preserve its link unless the user explicitly chooses to unlink it.
+The operating system is responsible for connecting to and synchronizing remote storage such as WebDAV.
+
+Related issue: [#16142](https://github.com/JabRef/jabref/issues/16142)
+
+Needs: impl, utest
+
 <!-- markdownlint-disable-file MD022 -->

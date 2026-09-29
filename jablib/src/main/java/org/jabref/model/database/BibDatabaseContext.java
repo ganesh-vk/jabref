@@ -153,24 +153,49 @@ public class BibDatabaseContext {
     }
 
     /// Look up the directories set up for this database.
-    /// There can be up to four directory definitions for these files:
+    /// There can be up to five directory definitions for these files:
     ///
     /// 1. next to the .bib file.
     /// 2. the preferences can specify a default one.
     /// 3. the database's metadata can specify a library-specific directory.
     /// 4. the database's metadata can specify a user-specific directory.
+    /// 5. the database's metadata can specify a user-specific remote directory.
     ///
     ///
-    /// The settings are prioritized in the following order, and the first defined setting is used:
+    /// The settings are searched in the following order:
     ///
     /// 1. user-specific metadata directory
     /// 2. general metadata directory
     /// 3. BIB file directory (if configured in the preferences AND none of the two above directories are configured)
     /// 4. preferences directory (if .bib file directory should not be used according to the (global) preferences)
+    /// 5. remote metadata directory, except that more specific nested paths precede their parent directories
     ///
     /// @param preferences The fileDirectory preferences
-    /// @return List of existing absolute paths
+    /// @return ordered list of configured paths
+    /// [impl->req~logic.externalfiles.remote-mounted-directory~1]
     public List<Path> getFileDirectories(FilePreferences preferences) {
+        List<Path> fileDirs = new ArrayList<>(getFileDirectoriesForNewFiles(preferences));
+        FileDirectories directories = getAllFileDirectories(preferences);
+
+        directories.getRemoteDirectoryOpt().ifPresent(remoteDirectory -> {
+            if (fileDirs.contains(remoteDirectory)) {
+                return;
+            }
+
+            List<Path> parentDirectories = fileDirs.stream()
+                                                   .filter(remoteDirectory::startsWith)
+                                                   .toList();
+            fileDirs.removeAll(parentDirectories);
+            fileDirs.add(remoteDirectory);
+            fileDirs.addAll(parentDirectories);
+        });
+
+        return fileDirs;
+    }
+
+    /// Returns the configured directories that may be used as destinations for new files.
+    /// The remote directory is excluded so automatic file operations continue to use local destinations.
+    public List<Path> getFileDirectoriesForNewFiles(FilePreferences preferences) {
         SequencedSet<Path> fileDirs = new LinkedHashSet<>();
         FileDirectories directories = getAllFileDirectories(preferences);
 
@@ -192,6 +217,7 @@ public class BibDatabaseContext {
     /// 1. user-specific directory
     /// 2. library-specific directory
     /// 3. BIB file directory or Main file directory (depending on preferences)
+    /// 4. user-specific remote directory
     ///
     /// @param preferences The file directory preferences
     /// @return fixed-size record containing absolute paths (if configured)
@@ -202,6 +228,9 @@ public class BibDatabaseContext {
         Path librarySpecificFileDirectory = metaData.getLibrarySpecificFileDirectory()
                                                     .map(this::getFileDirectoryPath)
                                                     .orElse(null);
+        Path remoteFileDirectory = metaData.getRemoteFileDirectory(preferences.getUserAndHost())
+                                           .map(this::getFileDirectoryPath)
+                                           .orElse(null);
 
         Path bibOrMainFileDirectory;
 
@@ -215,7 +244,8 @@ public class BibDatabaseContext {
         return new FileDirectories(
                 userFileDirectory,
                 librarySpecificFileDirectory,
-                bibOrMainFileDirectory
+                bibOrMainFileDirectory,
+                remoteFileDirectory
         );
     }
 
@@ -230,13 +260,13 @@ public class BibDatabaseContext {
         });
     }
 
-    /// Returns the first existing file directory from  [#getFileDirectories(FilePreferences)]
+    /// Returns the first existing file directory from [#getFileDirectoriesForNewFiles(FilePreferences)].
     ///
     /// @return the path - or an empty optional, if none of the directories exists
     public Optional<Path> getFirstExistingFileDir(FilePreferences preferences) {
-        return getFileDirectories(preferences).stream()
-                                              .filter(Files::exists)
-                                              .findFirst();
+        return getFileDirectoriesForNewFiles(preferences).stream()
+                                                          .filter(Files::exists)
+                                                          .findFirst();
     }
 
     /// @return The absolute path for the given directory

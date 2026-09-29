@@ -425,11 +425,12 @@ public abstract class NativeDesktop {
     ///
     /// @throws UnsupportedOperationException if the current platform does not support the [Desktop.Action#MOVE_TO_TRASH] action
     /// @see Desktop#moveToTrash(java.io.File)
-    public void moveToTrash(Path path) {
+    public boolean moveToTrash(Path path) {
         boolean success = Desktop.getDesktop().moveToTrash(path.toFile());
         if (!success) {
             LoggerFactory.getLogger(NativeDesktop.class).warn("Could not move to trash. File {} is kept.", path);
         }
+        return success;
     }
 
     public boolean moveToTrashSupported() {

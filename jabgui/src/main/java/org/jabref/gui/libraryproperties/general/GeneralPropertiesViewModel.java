@@ -45,11 +45,13 @@ public class GeneralPropertiesViewModel implements PropertiesTabViewModel {
     private final SimpleObjectProperty<BibDatabaseMode> selectedDatabaseModeProperty = new SimpleObjectProperty<>(BibDatabaseMode.BIBLATEX);
     private final StringProperty librarySpecificDirectoryProperty = new SimpleStringProperty("");
     private final StringProperty userSpecificFileDirectoryProperty = new SimpleStringProperty("");
+    private final StringProperty remoteFileDirectoryProperty = new SimpleStringProperty("");
     private final StringProperty laTexFileDirectoryProperty = new SimpleStringProperty("");
     private final StringProperty keywordSeparatorProperty = new SimpleStringProperty("");
 
     private final Validator librarySpecificFileDirectoryValidator;
     private final Validator userSpecificFileDirectoryValidator;
+    private final Validator remoteFileDirectoryValidator;
     private final Validator laTexFileDirectoryValidator;
 
     private final DialogService dialogService;
@@ -74,6 +76,11 @@ public class GeneralPropertiesViewModel implements PropertiesTabViewModel {
                 mainDirectoryPath -> validateDirectory(mainDirectoryPath, "User-specific")
         );
 
+        remoteFileDirectoryValidator = new FunctionBasedValidator<>(
+                remoteFileDirectoryProperty,
+                mainDirectoryPath -> validateDirectory(mainDirectoryPath, "Remote")
+        );
+
         laTexFileDirectoryValidator = new FunctionBasedValidator<>(
                 laTexFileDirectoryProperty,
                 mainDirectoryPath -> validateDirectory(mainDirectoryPath, "LaTeX")
@@ -89,6 +96,7 @@ public class GeneralPropertiesViewModel implements PropertiesTabViewModel {
         selectedDatabaseModeProperty.setValue(metaData.getMode().orElse(BibDatabaseMode.BIBLATEX));
         librarySpecificDirectoryProperty.setValue(metaData.getLibrarySpecificFileDirectory().orElse("").trim());
         userSpecificFileDirectoryProperty.setValue(metaData.getUserFileDirectory(preferences.getFilePreferences().getUserAndHost()).orElse("").trim());
+        remoteFileDirectoryProperty.setValue(metaData.getRemoteFileDirectory(preferences.getFilePreferences().getUserAndHost()).orElse("").trim());
         laTexFileDirectoryProperty.setValue(metaData.getLatexFileDirectory(preferences.getFilePreferences().getUserAndHost()).map(Path::toString).orElse(""));
         keywordSeparatorProperty.setValue(metaData.getKeywordSeparator().map(Object::toString).orElse(""));
     }
@@ -110,6 +118,13 @@ public class GeneralPropertiesViewModel implements PropertiesTabViewModel {
             metaData.clearUserFileDirectory(preferences.getFilePreferences().getUserAndHost());
         } else if (userSpecificFileDirectoryStatus().isValid()) {
             metaData.setUserFileDirectory(preferences.getFilePreferences().getUserAndHost(), userSpecificFileDirectory);
+        }
+
+        String remoteFileDirectory = remoteFileDirectoryProperty.getValue();
+        if (remoteFileDirectory.isEmpty()) {
+            metaData.clearRemoteFileDirectory(preferences.getFilePreferences().getUserAndHost());
+        } else if (remoteFileDirectoryStatus().isValid()) {
+            metaData.setRemoteFileDirectory(preferences.getFilePreferences().getUserAndHost(), remoteFileDirectory);
         }
 
         String latexFileDirectory = laTexFileDirectoryProperty.getValue();
@@ -157,14 +172,20 @@ public class GeneralPropertiesViewModel implements PropertiesTabViewModel {
         return laTexFileDirectoryValidator.getValidationStatus();
     }
 
+    ValidationStatus remoteFileDirectoryStatus() {
+        return remoteFileDirectoryValidator.getValidationStatus();
+    }
+
     @Override
     public boolean validateSettings() {
         ValidationStatus librarySpecificFileDirectoryStatus = librarySpecificFileDirectoryStatus();
         ValidationStatus userSpecificFileDirectoryStatus = userSpecificFileDirectoryStatus();
+        ValidationStatus remoteFileDirectoryStatus = remoteFileDirectoryStatus();
         ValidationStatus laTexFileDirectoryStatus = laTexFileDirectoryStatus();
 
         return promptUserToConfirmAction(librarySpecificFileDirectoryStatus) &&
                 promptUserToConfirmAction(userSpecificFileDirectoryStatus) &&
+                promptUserToConfirmAction(remoteFileDirectoryStatus) &&
                 promptUserToConfirmAction(laTexFileDirectoryStatus);
     }
 
@@ -186,7 +207,14 @@ public class GeneralPropertiesViewModel implements PropertiesTabViewModel {
         DirectoryDialogConfiguration directoryDialogConfiguration = new DirectoryDialogConfiguration.Builder()
                 .withInitialDirectory(getBrowseDirectory(laTexFileDirectoryProperty.getValue())).build();
         dialogService.showDirectorySelectionDialog(directoryDialogConfiguration)
-                     .ifPresent(dir -> setDirectory(laTexFileDirectoryProperty, dir));
+                      .ifPresent(dir -> setDirectory(laTexFileDirectoryProperty, dir));
+    }
+
+    public void browseRemoteDir() {
+        DirectoryDialogConfiguration directoryDialogConfiguration = new DirectoryDialogConfiguration.Builder()
+                .withInitialDirectory(getBrowseDirectory(remoteFileDirectoryProperty.getValue())).build();
+        dialogService.showDirectorySelectionDialog(directoryDialogConfiguration)
+                     .ifPresent(dir -> setDirectory(remoteFileDirectoryProperty, dir));
     }
 
     public BooleanProperty encodingDisableProperty() {
@@ -223,6 +251,10 @@ public class GeneralPropertiesViewModel implements PropertiesTabViewModel {
 
     public StringProperty keywordSeparatorProperty() {
         return this.keywordSeparatorProperty;
+    }
+
+    public StringProperty remoteFileDirectoryProperty() {
+        return remoteFileDirectoryProperty;
     }
 
     private Path getBrowseDirectory(String configuredDir) {

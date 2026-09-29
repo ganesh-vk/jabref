@@ -1,6 +1,8 @@
 package org.jabref.logic.externalfiles;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -85,7 +87,7 @@ public class LinkedFileHandler {
                 if (shouldMove && !Files.isSameFile(sourcePath, getTargetPathResult.path)) {
                     Files.delete(sourcePath);
                 }
-                linkedFile.setLink(FileUtil.relativize(getTargetPathResult.path(), databaseContext, filePreferences).toString());
+                updateLink(getTargetPathResult.path());
                 return true;
             }
         }
@@ -98,21 +100,101 @@ public class LinkedFileHandler {
                 if (shouldMove && !Files.isSameFile(sourcePath, getTargetPathResult.path)) {
                     Files.delete(sourcePath);
                 }
-                linkedFile.setLink(FileUtil.relativize(getTargetPathResult.path(), databaseContext, filePreferences).toString());
+                updateLink(getTargetPathResult.path());
                 return true;
             }
         }
 
         assert !Files.exists(getTargetPathResult.path);
         if (shouldMove) {
-            Files.move(sourcePath, getTargetPathResult.path);
+            moveFile(sourcePath, getTargetPathResult.path);
         } else {
             Files.copy(sourcePath, getTargetPathResult.path);
         }
         assert Files.exists(getTargetPathResult.path);
 
-        linkedFile.setLink(FileUtil.relativize(getTargetPathResult.path, databaseContext, filePreferences).toString());
+        updateLink(getTargetPathResult.path);
         return true;
+    }
+
+    // [impl->req~logic.externalfiles.remote-mounted-directory~1]
+    private void updateLink(Path target) {
+        Path relativeTarget = FileUtil.relativize(target, databaseContext, filePreferences);
+        if (relativeTarget.isAbsolute()) {
+            linkedFile.setLink(relativeTarget.toString());
+            return;
+        }
+
+        boolean relativeLinkTargetsMovedFile = FileUtil.find(databaseContext, relativeTarget.toString(), filePreferences)
+                                                       .map(resolvedTarget -> refersToSameFile(target, resolvedTarget))
+                                                       .orElse(false);
+        if (relativeLinkTargetsMovedFile) {
+            linkedFile.setLink(relativeTarget.toString());
+            return;
+        }
+
+        linkedFile.setLink(target.toAbsolutePath().normalize().toString());
+    }
+
+    private boolean refersToSameFile(Path target, Path resolvedTarget) {
+        try {
+            return Files.isSameFile(target, resolvedTarget);
+        } catch (IOException exception) {
+            LOGGER.debug("Could not verify resolved link {} for target {}", resolvedTarget, target, exception);
+            return false;
+        }
+    }
+
+    private void moveFile(Path source, Path target) throws IOException {
+        Optional<Path> remoteDirectory = databaseContext.getAllFileDirectories(filePreferences).getRemoteDirectoryOpt();
+        boolean sourceOrTargetIsRemote = remoteDirectory.filter(source::startsWith).isPresent()
+                || remoteDirectory.filter(target::startsWith).isPresent();
+        if (sourceOrTargetIsRemote) {
+            copyAndDelete(source, target);
+            return;
+        }
+
+        moveFileWithFallback(source, target);
+    }
+
+    static void moveFileWithFallback(Path source, Path target) throws IOException {
+        if (!source.getFileSystem().provider().equals(target.getFileSystem().provider())) {
+            copyAndDelete(source, target);
+            return;
+        }
+
+        try {
+            Files.move(source, target);
+        } catch (FileSystemException moveException) {
+            if (Files.exists(target) || !Files.exists(source)) {
+                throw moveException;
+            }
+
+            LOGGER.debug("File system move from {} to {} failed. Retrying without copying file attributes.", source, target, moveException);
+            try {
+                copyAndDelete(source, target);
+            } catch (IOException fallbackException) {
+                fallbackException.addSuppressed(moveException);
+                throw fallbackException;
+            }
+        }
+    }
+
+    private static void copyAndDelete(Path source, Path target) throws IOException {
+        try {
+            Files.copy(source, target);
+        } catch (FileAlreadyExistsException exception) {
+            throw exception;
+        } catch (IOException copyException) {
+            try {
+                Files.deleteIfExists(target);
+            } catch (IOException cleanupException) {
+                copyException.addSuppressed(cleanupException);
+            }
+            throw copyException;
+        }
+
+        Files.delete(source);
     }
 
     /// If exists: the path already exists and has the same content as the given sourcePath
@@ -232,12 +314,7 @@ public class LinkedFileHandler {
             Files.move(oldPath, newPath);
         }
 
-        // Update path
-        if (newPath.isAbsolute()) {
-            linkedFile.setLink(FileUtil.relativize(newPath, databaseContext, filePreferences).toString());
-        } else {
-            linkedFile.setLink(newPath.toString());
-        }
+        updateLink(newPath);
 
         return true;
     }

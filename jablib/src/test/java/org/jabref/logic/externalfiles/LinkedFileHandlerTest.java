@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 
 import org.jabref.logic.FilePreferences;
 import org.jabref.logic.preferences.CliPreferences;
@@ -17,8 +18,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -61,6 +65,78 @@ class LinkedFileHandlerTest {
         linkedFileHandler.renameToName(newFileName, false);
         final String result = Path.of(linkedFile.getLink()).getFileName().toString();
         assertEquals(expectedFileName, result);
+    }
+
+    @Test
+    void moveToRemoteDirectoryCopiesWithoutAttributesAndDeletesSource() throws IOException {
+        when(filePreferences.getUserAndHost()).thenReturn("user-host");
+        Path sourceFile = tempFolder.resolve("source.pdf");
+        Path remoteDirectory = tempFolder.resolve("remote");
+        Files.writeString(sourceFile, "content");
+        FileTime oldModifiedTime = FileTime.fromMillis(946684800000L);
+        Files.setLastModifiedTime(sourceFile, oldModifiedTime);
+        databaseContext.getMetaData().setRemoteFileDirectory("user-host", remoteDirectory.toString());
+
+        LinkedFile linkedFile = new LinkedFile("", sourceFile, "PDF");
+        LinkedFileHandler linkedFileHandler = new LinkedFileHandler(linkedFile, entryWithoutCitationKey, databaseContext, filePreferences);
+
+        linkedFileHandler.moveToExactDirectory(remoteDirectory);
+
+        Path targetFile = remoteDirectory.resolve("source.pdf");
+        assertEquals("content", Files.readString(targetFile));
+        assertFalse(Files.exists(sourceFile));
+        assertNotEquals(oldModifiedTime, Files.getLastModifiedTime(targetFile));
+    }
+
+    @Test
+    void moveToRemoteDirectoryKeepsAbsoluteLinkWhenRelativeLinkResolvesToDifferentLocalFile() throws IOException {
+        when(filePreferences.getUserAndHost()).thenReturn("user-host");
+        Path sourceDirectory = tempFolder.resolve("source");
+        Path otherLocalDirectory = tempFolder.resolve("other-local");
+        Path remoteDirectory = tempFolder.resolve("remote");
+        Files.createDirectories(sourceDirectory);
+        Files.createDirectories(otherLocalDirectory);
+        Files.createDirectories(remoteDirectory);
+        Path sourceFile = sourceDirectory.resolve("report.pdf");
+        Files.writeString(sourceFile, "intended document");
+        Files.writeString(otherLocalDirectory.resolve("report.pdf"), "different document");
+        databaseContext.getMetaData().setUserFileDirectory("user-host", sourceDirectory.toString());
+        databaseContext.getMetaData().setLibrarySpecificFileDirectory(otherLocalDirectory.toString());
+        databaseContext.getMetaData().setRemoteFileDirectory("user-host", remoteDirectory.toString());
+
+        LinkedFile linkedFile = new LinkedFile("", "report.pdf", "PDF");
+        LinkedFileHandler linkedFileHandler = new LinkedFileHandler(linkedFile, entryWithoutCitationKey, databaseContext, filePreferences);
+
+        linkedFileHandler.moveToExactDirectory(remoteDirectory);
+
+        Path targetFile = remoteDirectory.resolve("report.pdf");
+        assertEquals(targetFile.toAbsolutePath().normalize().toString(), linkedFile.getLink());
+        assertEquals("intended document", Files.readString(targetFile));
+    }
+
+    // [utest->req~logic.externalfiles.remote-mounted-directory~1]
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void renameRemoteFileKeepsLinkWhenLocalFileHasSameName(boolean overwriteExistingFile) throws IOException {
+        when(filePreferences.getUserAndHost()).thenReturn("user-host");
+        Path localDirectory = Files.createDirectory(tempFolder.resolve("local"));
+        Path remoteDirectory = Files.createDirectory(tempFolder.resolve("remote"));
+        Path sourceFile = Files.writeString(remoteDirectory.resolve("original.pdf"), "remote document");
+        Path localFile = Files.writeString(localDirectory.resolve("renamed.pdf"), "local document");
+        if (overwriteExistingFile) {
+            Files.writeString(remoteDirectory.resolve("renamed.pdf"), "old remote document");
+        }
+        databaseContext.getMetaData().setUserFileDirectory("user-host", localDirectory.toString());
+        databaseContext.getMetaData().setRemoteFileDirectory("user-host", remoteDirectory.toString());
+        LinkedFile linkedFile = new LinkedFile("", sourceFile, "PDF");
+        LinkedFileHandler linkedFileHandler = new LinkedFileHandler(linkedFile, entryWithoutCitationKey, databaseContext, filePreferences);
+
+        linkedFileHandler.renameToName("renamed.pdf", overwriteExistingFile);
+
+        assertEquals(remoteDirectory.resolve("renamed.pdf").toString(), linkedFile.getLink());
+        assertEquals("remote document", Files.readString(linkedFile.findIn(databaseContext, filePreferences).orElseThrow()));
+        assertEquals("local document", Files.readString(localFile));
+        assertFalse(Files.exists(sourceFile));
     }
 
     @ParameterizedTest(name = "{1} with {2} should be {0} for citation key 'asdf'")

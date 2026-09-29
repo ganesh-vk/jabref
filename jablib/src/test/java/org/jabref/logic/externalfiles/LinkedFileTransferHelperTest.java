@@ -1,8 +1,13 @@
 package org.jabref.logic.externalfiles;
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import org.jabref.logic.FilePreferences;
@@ -11,18 +16,56 @@ import org.jabref.model.TransferMode;
 import org.jabref.model.database.BibDatabase;
 import org.jabref.model.database.BibDatabaseContext;
 import org.jabref.model.entry.BibEntry;
+import org.jabref.model.entry.LinkedFile;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 // Assumption in all tests: if not contained in a library directory, paths are absolute
 class LinkedFileTransferHelperTest {
     private @TempDir Path tempDir;
+
+    @Test
+    void moveCopiesAndDeletesLinkedFileAcrossFileSystems() throws IOException {
+        FilePreferences filePreferences = mock(FilePreferences.class);
+        when(filePreferences.shouldAdjustFileLinksOnTransfer()).thenReturn(true);
+        when(filePreferences.shouldMoveLinkedFilesOnTransfer()).thenReturn(true);
+        when(filePreferences.shouldStoreFilesRelativeToBibFile()).thenReturn(true);
+
+        Path archive = tempDir.resolve("remote.zip");
+        URI archiveUri = URI.create("jar:" + archive.toUri());
+        try (FileSystem remoteFileSystem = FileSystems.newFileSystem(archiveUri, Map.of("create", "true"))) {
+            Path remoteDirectory = remoteFileSystem.getPath("/source");
+            Files.createDirectories(remoteDirectory);
+            Path sourceFile = remoteDirectory.resolve("report.pdf");
+            Files.writeString(sourceFile, "content");
+
+            BibDatabaseContext sourceContext = new BibDatabaseContext();
+            sourceContext.setDatabasePath(remoteDirectory.resolve("library.bib"));
+            Path targetDirectory = tempDir.resolve("target");
+            Files.createDirectories(targetDirectory);
+            BibDatabaseContext targetContext = new BibDatabaseContext();
+            targetContext.setDatabasePath(targetDirectory.resolve("library.bib"));
+            BibEntry targetEntry = new BibEntry().withFiles(List.of(new LinkedFile("", "report.pdf", "PDF")));
+
+            LinkedFileTransferHelper.adjustLinkedFilesForTarget(
+                    filePreferences,
+                    new org.jabref.model.TransferInformation(sourceContext, TransferMode.MOVE),
+                    targetContext,
+                    targetEntry);
+
+            assertEquals("content", Files.readString(targetDirectory.resolve("report.pdf")));
+            assertFalse(Files.exists(sourceFile));
+        }
+    }
 
     @ParameterizedTest(name = "{0}")
     // @CsvSource could also be used, but there is no strong typing

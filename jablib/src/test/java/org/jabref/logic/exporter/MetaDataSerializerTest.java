@@ -108,6 +108,14 @@ public class MetaDataSerializerTest {
     }
 
     @Test
+    void serializeRemoteFileDirectory() {
+        metaData.setRemoteFileDirectory("user-host", "/mnt/remote");
+
+        assertEquals(Map.of("remoteFileDirectory-user-host", "/mnt/remote;"),
+                MetaDataSerializer.getSerializedStringMap(metaData, pattern));
+    }
+
+    @Test
     void parsingEmptyOrFieldsReturnsEmptyCollections() {
         String serialized = MetaDataSerializer.serializeCustomEntryTypes(newCustomType);
         Optional<BibEntryType> type = MetaDataParser.parseCustomEntryType(serialized);

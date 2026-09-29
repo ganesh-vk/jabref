@@ -34,23 +34,29 @@ public class GeneralPropertiesView extends AbstractPropertiesTabView<GeneralProp
     @FXML private ComboBox<BibDatabaseMode> databaseMode;
     @FXML private TextField librarySpecificFileDirectory;
     @FXML private TextField userSpecificFileDirectory;
+    @FXML private TextField remoteFileDirectory;
     @FXML private TextField latexFileDirectory;
     @FXML private TextField keywordSeparator;
     @FXML private Button libSpecificFileDirSwitchId;
     @FXML private Button userSpecificFileDirSwitchId;
+    @FXML private Button remoteFileDirSwitchId;
     @FXML private Button laTexSpecificFileDirSwitchId;
     @FXML private JabRefIconView libSpecificFileDirSwitchIcon;
     @FXML private JabRefIconView userSpecificFileDirSwitchIcon;
+    @FXML private JabRefIconView remoteFileDirSwitchIcon;
     @FXML private JabRefIconView laTexSpecificFileDirSwitchIcon;
     @FXML private Tooltip libSpecificFileDirSwitchTooltip;
     @FXML private Tooltip userSpecificFileDirSwitchTooltip;
+    @FXML private Tooltip remoteFileDirSwitchTooltip;
     @FXML private Tooltip laTexSpecificFileDirSwitchTooltip;
     @FXML private Tooltip userSpecificFileDirectoryTooltip;
+    @FXML private Tooltip remoteFileDirectoryTooltip;
     @FXML private Tooltip latexFileDirectoryTooltip;
     @FXML private Tooltip librarySpecificFileDirectoryTooltip;
 
     private final ControlsFxVisualizer librarySpecificFileDirectoryValidationVisualizer = new ControlsFxVisualizer();
     private final ControlsFxVisualizer userSpecificFileDirectoryValidationVisualizer = new ControlsFxVisualizer();
+    private final ControlsFxVisualizer remoteFileDirectoryValidationVisualizer = new ControlsFxVisualizer();
     private final ControlsFxVisualizer latexFileDirectoryValidationVisualizer = new ControlsFxVisualizer();
     private final String switchToRelativeText = Localization.lang("Switch to relative path: converts the path to a relative path.");
     private final String switchToAbsoluteText = Localization.lang("Switch to absolute path: converts the path to an absolute path.");
@@ -91,6 +97,7 @@ public class GeneralPropertiesView extends AbstractPropertiesTabView<GeneralProp
         librarySpecificFileDirectory.textProperty().bindBidirectional(viewModel.librarySpecificDirectoryProperty());
 
         userSpecificFileDirectory.textProperty().bindBidirectional(viewModel.userSpecificFileDirectoryProperty());
+        remoteFileDirectory.textProperty().bindBidirectional(viewModel.remoteFileDirectoryProperty());
         latexFileDirectory.textProperty().bindBidirectional(viewModel.laTexFileDirectoryProperty());
         keywordSeparator.textProperty().bindBidirectional(viewModel.keywordSeparatorProperty());
         // Limit the keyword separator to a single character (same as the global preference control)
@@ -100,13 +107,16 @@ public class GeneralPropertiesView extends AbstractPropertiesTabView<GeneralProp
 
         userSpecificFileDirectoryTooltip.setText(Localization.lang("User-specific file directory: %0", preferences.getFilePreferences().getUserAndHost()));
         userSpecificFileDirectory.setTooltip(userSpecificFileDirectoryTooltip);
+        remoteFileDirectoryTooltip.setText(Localization.lang("Remote file directory: %0", preferences.getFilePreferences().getUserAndHost()));
 
         librarySpecificFileDirectoryValidationVisualizer.setDecoration(new IconValidationDecorator());
         userSpecificFileDirectoryValidationVisualizer.setDecoration(new IconValidationDecorator());
+        remoteFileDirectoryValidationVisualizer.setDecoration(new IconValidationDecorator());
         latexFileDirectoryValidationVisualizer.setDecoration(new IconValidationDecorator());
 
         libSpecificFileDirSwitchId.setDisable(this.databaseContext.getDatabasePath().isEmpty());
         userSpecificFileDirSwitchId.setDisable(this.databaseContext.getDatabasePath().isEmpty());
+        remoteFileDirSwitchId.setDisable(this.databaseContext.getDatabasePath().isEmpty());
         laTexSpecificFileDirSwitchId.setDisable(this.databaseContext.getDatabasePath().isEmpty());
 
         librarySpecificFileDirectory.textProperty().addListener((_, _, newValue) -> {
@@ -122,6 +132,12 @@ public class GeneralPropertiesView extends AbstractPropertiesTabView<GeneralProp
             userSpecificFileDirSwitchTooltip.setText(isAbsolute ? switchToRelativeText : switchToAbsoluteText);
         });
 
+        remoteFileDirectory.textProperty().addListener((_, _, newValue) -> {
+            boolean isAbsolute = Path.of(newValue).isAbsolute();
+            remoteFileDirSwitchIcon.setGlyph(isAbsolute ? RELATIVE_PATH : ABSOLUTE_PATH);
+            remoteFileDirSwitchTooltip.setText(isAbsolute ? switchToRelativeText : switchToAbsoluteText);
+        });
+
         latexFileDirectory.textProperty().addListener((_, _, newValue) -> {
             boolean isAbsolute = Path.of(newValue).isAbsolute();
             laTexSpecificFileDirSwitchIcon.setGlyph(isAbsolute ? RELATIVE_PATH : ABSOLUTE_PATH);
@@ -133,6 +149,7 @@ public class GeneralPropertiesView extends AbstractPropertiesTabView<GeneralProp
         Platform.runLater(() -> {
             librarySpecificFileDirectoryValidationVisualizer.initVisualization(viewModel.librarySpecificFileDirectoryStatus(), librarySpecificFileDirectory);
             userSpecificFileDirectoryValidationVisualizer.initVisualization(viewModel.userSpecificFileDirectoryStatus(), userSpecificFileDirectory);
+            remoteFileDirectoryValidationVisualizer.initVisualization(viewModel.remoteFileDirectoryStatus(), remoteFileDirectory);
             latexFileDirectoryValidationVisualizer.initVisualization(viewModel.laTexFileDirectoryStatus(), latexFileDirectory);
 
             librarySpecificFileDirectory.requestFocus();
@@ -150,6 +167,11 @@ public class GeneralPropertiesView extends AbstractPropertiesTabView<GeneralProp
     }
 
     @FXML
+    public void browseRemoteFileDirectory() {
+        viewModel.browseRemoteDir();
+    }
+
+    @FXML
     void browseLatexFileDirectory() {
         viewModel.browseLatexDir();
     }
@@ -162,6 +184,11 @@ public class GeneralPropertiesView extends AbstractPropertiesTabView<GeneralProp
     @FXML
     void userSpecificFileDirPathSwitch() {
         viewModel.togglePath(viewModel.userSpecificFileDirectoryProperty());
+    }
+
+    @FXML
+    void remoteFileDirPathSwitch() {
+        viewModel.togglePath(viewModel.remoteFileDirectoryProperty());
     }
 
     @FXML

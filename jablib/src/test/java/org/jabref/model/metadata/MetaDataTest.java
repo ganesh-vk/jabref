@@ -41,6 +41,22 @@ class MetaDataTest {
     }
 
     @Test
+    void storesRemoteFileDirectoryPerUserHost() {
+        metaData.setRemoteFileDirectory("user-host", "/mnt/remote");
+
+        assertEquals(Optional.of("/mnt/remote"), metaData.getRemoteFileDirectory("user-host"));
+        assertEquals(Optional.empty(), metaData.getRemoteFileDirectory("other-host"));
+    }
+
+    @Test
+    void clearsRemoteFileDirectoryPerUserHost() {
+        metaData.setRemoteFileDirectory("user-host", "/mnt/remote");
+        metaData.clearRemoteFileDirectory("user-host");
+
+        assertEquals(Optional.empty(), metaData.getRemoteFileDirectory("user-host"));
+    }
+
+    @Test
     void storesAiLibraryId() {
         metaData.setAiLibraryId("test-ai-library-id");
 

@@ -3,6 +3,10 @@ package org.jabref.gui.fieldeditors;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+
+import javafx.application.Platform;
 
 import org.jabref.gui.DialogService;
 import org.jabref.gui.frame.ExternalApplicationsPreferences;
@@ -10,10 +14,13 @@ import org.jabref.gui.preferences.GuiPreferences;
 import org.jabref.gui.testutils.JavaFxExtension;
 import org.jabref.logic.FilePreferences;
 import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.util.BackgroundTask;
+import org.jabref.logic.util.CurrentThreadTaskExecutor;
 import org.jabref.logic.util.TaskExecutor;
 import org.jabref.logic.util.io.FileUtil;
 import org.jabref.model.database.BibDatabase;
 import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.database.FileDirectories;
 import org.jabref.model.entry.BibEntry;
 import org.jabref.model.entry.LinkedFile;
 import org.jabref.model.entry.types.StandardEntryType;
@@ -22,15 +29,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.mockito.ArgumentCaptor;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(JavaFxExtension.class)
+@ResourceLock("Localization.lang")
 class LinkedFileViewModelMoveFileTest {
 
     @TempDir Path tempDir;
@@ -51,7 +63,7 @@ class LinkedFileViewModelMoveFileTest {
         preferences = mock(GuiPreferences.class);
         filePreferences = mock(FilePreferences.class);
         dialogService = mock(DialogService.class);
-        taskExecutor = mock(TaskExecutor.class);
+        taskExecutor = new CurrentThreadTaskExecutor();
 
         when(preferences.getFilePreferences()).thenReturn(filePreferences);
         when(preferences.getExternalApplicationsPreferences()).thenReturn(mock(ExternalApplicationsPreferences.class));
@@ -59,6 +71,7 @@ class LinkedFileViewModelMoveFileTest {
 
         entry = new BibEntry(StandardEntryType.Article);
         when(databaseContext.getDatabase()).thenReturn(new BibDatabase());
+        when(databaseContext.getAllFileDirectories(filePreferences)).thenReturn(new FileDirectories(null, null, null, null));
 
         sourceDir = tempDir.resolve("source");
         destinationDir = tempDir.resolve("destination");
@@ -113,6 +126,48 @@ class LinkedFileViewModelMoveFileTest {
                 eq(Localization.lang("File not found")),
                 eq(Localization.lang("Could not find file '%0'.", linkedFile.getLink()))
         );
+    }
+
+    @Test
+    void moveToDirectorySubmitsBackgroundTask() throws IOException {
+        TaskExecutor backgroundTaskExecutor = mock(TaskExecutor.class);
+        Path sourceFile = sourceDir.resolve("test.pdf");
+        Files.createFile(sourceFile);
+        LinkedFile linkedFile = new LinkedFile("desc", sourceFile, "pdf");
+        LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, backgroundTaskExecutor, dialogService, preferences);
+
+        viewModel.moveToDirectory(destinationDir);
+
+        verify(backgroundTaskExecutor).execute(any());
+        assertTrue(Files.exists(sourceFile));
+        assertFalse(Files.exists(destinationDir.resolve("test.pdf")));
+    }
+
+    // [utest->req~logic.externalfiles.remote-mounted-directory~1]
+    @Test
+    void moveToDirectoryUpdatesLinkOnlyInJavaFxSuccessCallback() throws Exception {
+        TaskExecutor backgroundTaskExecutor = mock(TaskExecutor.class);
+        Path sourceFile = sourceDir.resolve("test.pdf");
+        Files.writeString(sourceFile, "content");
+        LinkedFile linkedFile = new LinkedFile("desc", sourceFile, "pdf");
+        List<Boolean> linkUpdatesOnJavaFxThread = new ArrayList<>();
+        linkedFile.linkProperty().addListener((_, _, _) -> linkUpdatesOnJavaFxThread.add(Platform.isFxApplicationThread()));
+        LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, backgroundTaskExecutor, dialogService, preferences);
+
+        JavaFxExtension.invokeAndWait(() -> viewModel.moveToDirectory(destinationDir));
+        ArgumentCaptor<BackgroundTask<String>> taskCaptor = ArgumentCaptor.captor();
+        verify(backgroundTaskExecutor).execute(taskCaptor.capture());
+        BackgroundTask<String> moveTask = taskCaptor.getValue();
+        String newLink = moveTask.call();
+
+        assertEquals("content", Files.readString(destinationDir.resolve("test.pdf")));
+        assertEquals(sourceFile.toString(), linkedFile.getLink());
+        assertEquals(List.of(), linkUpdatesOnJavaFxThread);
+
+        JavaFxExtension.invokeAndWait(() -> moveTask.getOnSuccess().accept(newLink));
+
+        assertEquals(destinationDir.resolve("test.pdf").toString(), linkedFile.getLink());
+        assertEquals(List.of(true), linkUpdatesOnJavaFxThread);
     }
 
     @Test

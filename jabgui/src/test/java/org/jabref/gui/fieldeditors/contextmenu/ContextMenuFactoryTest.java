@@ -2,13 +2,13 @@ package org.jabref.gui.fieldeditors.contextmenu;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
 
 import org.jabref.gui.DialogService;
@@ -75,7 +75,7 @@ class ContextMenuFactoryTest {
         when(guiPreferences.getFieldPreferences()).thenReturn(fieldPreferences);
         when(filePreferences.getMainFileDirectory()).thenReturn(Optional.of(Path.of("/main")));
         when(bibDatabaseContext.getAllFileDirectories(filePreferences))
-                .thenReturn(new FileDirectories(Path.of("/user"), Path.of("/library"), Path.of("/main")));
+                .thenReturn(new FileDirectories(Path.of("/user"), Path.of("/library"), Path.of("/main"), Path.of("/remote")));
         when(bibDatabaseContext.getDatabaseDirectory()).thenReturn(Optional.of(Path.of("/bib")));
 
         factory = new ContextMenuFactory(
@@ -118,6 +118,20 @@ class ContextMenuFactoryTest {
 
         assertNotNull(contextMenu);
         assertFalse(contextMenu.getItems().isEmpty(), "Single-selection menu should not be empty");
+        assertTrue(containsMenuItemWithText(contextMenu.getItems(), "Remote file directory: /remote"));
+    }
+
+    @Test
+    void createMenuForSingleOfflineFileOmitsUnconfiguredRemoteDirectory() {
+        when(bibDatabaseContext.getAllFileDirectories(filePreferences))
+                .thenReturn(new FileDirectories(Path.of("/user"), Path.of("/library"), Path.of("/main"), null));
+        LinkedFileViewModel offlineExistingFileViewModel = mockOfflineExistingFileViewModel(
+                bibDatabaseContext, filePreferences, ""
+        );
+
+        ContextMenu contextMenu = factory.createMenuForSelection(FXCollections.observableArrayList(offlineExistingFileViewModel));
+
+        assertFalse(containsMenuItemWithText(contextMenu.getItems(), "Remote file directory"));
     }
 
     @Test
@@ -155,10 +169,13 @@ class ContextMenuFactoryTest {
     }
 
     private static boolean containsMenuItemWithText(ContextMenu contextMenu, String expectedFragment) {
-        return contextMenu.getItems().stream()
-                          .map(MenuItem::getText)
-                          .filter(Objects::nonNull)
-                          .anyMatch(text -> text.contains(expectedFragment));
+        return containsMenuItemWithText(contextMenu.getItems(), expectedFragment);
+    }
+
+    private static boolean containsMenuItemWithText(List<MenuItem> menuItems, String expectedFragment) {
+        return menuItems.stream()
+                        .anyMatch(item -> Optional.ofNullable(item.getText()).map(text -> text.contains(expectedFragment)).orElse(false)
+                                || (item instanceof Menu menu && containsMenuItemWithText(menu.getItems(), expectedFragment)));
     }
 
     private static LinkedFileViewModel mockOfflineExistingFileViewModel(BibDatabaseContext bibDatabaseContext,

@@ -33,6 +33,7 @@ import org.jabref.logic.util.TaskExecutor;
 import org.jabref.logic.util.URLUtil;
 import org.jabref.logic.xmp.XmpPreferences;
 import org.jabref.model.database.BibDatabaseContext;
+import org.jabref.model.database.FileDirectories;
 import org.jabref.model.entry.BibEntry;
 import org.jabref.model.entry.LinkedFile;
 
@@ -128,7 +129,7 @@ class LinkedFileViewModelTest {
     }
 
     @Test
-    void deleteWhenFilePathNotPresentReturnsTrue() {
+    void deleteWhenFilePathNotPresentPreservesLink() {
         // Making this a spy, so we can inject an empty optional without digging into the implementation
         linkedFile = spy(new LinkedFile("", Path.of("nonexistent file"), ""));
         doReturn(Optional.empty()).when(linkedFile).findIn(any(BibDatabaseContext.class), any(FilePreferences.class));
@@ -136,10 +137,22 @@ class LinkedFileViewModelTest {
         LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
         boolean removed = viewModel.delete();
 
-        assertTrue(removed);
+        assertFalse(removed);
 
         // We show "Error accessing file '%0'.", thus the next condition does not hold
         // verifyNoInteractions(dialogService); // dialog was never shown
+    }
+
+    @Test
+    void deleteWithoutConfirmationPreservesMissingFileLink() {
+        when(filePreferences.confirmDeleteLinkedFile()).thenReturn(false);
+        linkedFile = spy(new LinkedFile("", Path.of("nonexistent file"), ""));
+        doReturn(Optional.empty()).when(linkedFile).findIn(any(BibDatabaseContext.class), any(FilePreferences.class));
+        LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
+
+        boolean removed = viewModel.delete();
+
+        assertFalse(removed);
     }
 
     @Test
@@ -178,7 +191,7 @@ class LinkedFileViewModelTest {
     }
 
     @Test
-    void deleteMissingFileReturnsTrue() {
+    void deleteMissingFileFromDiskPreservesLink() {
         linkedFile = new LinkedFile("", Path.of("!!nonexistent file!!"), "");
         when(dialogService.showCustomDialogAndWait(
                 anyString(),
@@ -190,7 +203,7 @@ class LinkedFileViewModelTest {
         LinkedFileViewModel viewModel = new LinkedFileViewModel(linkedFile, entry, databaseContext, taskExecutor, dialogService, preferences);
         boolean removed = viewModel.delete();
 
-        assertTrue(removed);
+        assertFalse(removed);
     }
 
     @Test
@@ -279,6 +292,7 @@ class LinkedFileViewModelTest {
         when(filePreferences.getFileNamePattern()).thenReturn("[citationkey]");
         when(filePreferences.getFileDirectoryPattern()).thenReturn("[entrytype]");
         when(databaseContext.getFirstExistingFileDir(filePreferences)).thenReturn(Optional.of(tempFile.getParent()));
+        when(databaseContext.getAllFileDirectories(filePreferences)).thenReturn(new FileDirectories(null, null, null, null));
 
         LinkedFileHandler fileHandler = new LinkedFileHandler(linkedFile, entry, databaseContext, filePreferences);
         fileHandler.moveToDefaultDirectory();

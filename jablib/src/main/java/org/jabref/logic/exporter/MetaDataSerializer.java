@@ -67,6 +67,8 @@ public class MetaDataSerializer {
                 .put(MetaData.FILE_DIRECTORY + '-' + user, List.of(path.trim())));
         metaData.getLatexFileDirectories().forEach((user, path) -> stringyMetaData
                 .put(MetaData.FILE_DIRECTORY_LATEX + '-' + user, List.of(path.trim())));
+        metaData.getRemoteFileDirectories().forEach((user, path) -> stringyMetaData
+                .put(MetaData.FILE_DIRECTORY_REMOTE + '-' + user, List.of(path.trim())));
         metaData.getVersionDBStructure().ifPresent(
                 versionDBStructure -> stringyMetaData.put(MetaData.VERSION_DB_STRUCT, List.of(versionDBStructure.trim())));
         metaData.getBlgFilePaths().forEach((user, path) -> stringyMetaData.put(MetaData.BLG_FILE_PATH + "-" + user, List.of(path.toString().trim())));

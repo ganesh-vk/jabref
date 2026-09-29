@@ -42,6 +42,7 @@ import org.jabref.logic.FilePreferences;
 import org.jabref.logic.externalfiles.LinkedFileHandler;
 import org.jabref.logic.l10n.Localization;
 import org.jabref.logic.undo.UndoManager;
+import org.jabref.logic.util.BackgroundTask;
 import org.jabref.logic.util.TaskExecutor;
 import org.jabref.logic.util.io.FileNameUniqueness;
 import org.jabref.logic.util.io.FileUtil;
@@ -61,6 +62,8 @@ import org.slf4j.LoggerFactory;
 public class LinkedFileViewModel extends AbstractViewModel {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LinkedFileViewModel.class);
+    private static final Runnable NO_OP = () -> {
+    };
 
     private final LinkedFile linkedFile;
     private final BibDatabaseContext databaseContext;
@@ -328,6 +331,10 @@ public class LinkedFileViewModel extends AbstractViewModel {
     }
 
     public void moveToDirectory(Path destinationDirectory) {
+        moveToDirectory(destinationDirectory, NO_OP);
+    }
+
+    private void moveToDirectory(Path destinationDirectory, Runnable onSuccess) {
         if (linkedFile.isOnlineLink()) {
             return;
         }
@@ -343,19 +350,31 @@ public class LinkedFileViewModel extends AbstractViewModel {
 
         Path destDirectoryWithPattern = getFullDestinationDirectory(destinationDirectory);
 
-        try {
-            linkedFileHandler.moveToExactDirectory(destDirectoryWithPattern);
-        } catch (IOException exception) {
-            dialogService.showErrorDialogAndWait(
-                    Localization.lang("Move file"),
-                    Localization.lang("Could not move file '%0'.", currentFile.get().toString()),
-                    exception);
-        }
+        // [impl->req~logic.externalfiles.remote-mounted-directory~1]
+        // The handler mutates its linked file, so keep it detached from JavaFX bindings during file I/O.
+        LinkedFile fileToMove = new LinkedFile(linkedFile.getDescription(), currentFile.get(), linkedFile.getFileType());
+        BackgroundTask.wrap(() -> {
+            new LinkedFileHandler(fileToMove, entry, databaseContext, preferences.getFilePreferences())
+                    .moveToExactDirectory(destDirectoryWithPattern);
+            return fileToMove.getLink();
+        })
+                      .setTitle(Localization.lang("Move file"))
+                      .showToUser(true)
+                      .onSuccess(newLink -> {
+                          linkedFile.setLink(newLink);
+                          onSuccess.run();
+                      })
+                      .onFailure(exception -> dialogService.showErrorDialogAndWait(
+                              Localization.lang("Move file"),
+                              Localization.lang("Could not move file '%0'.", currentFile.get().toString()),
+                              exception))
+                      .executeWith(taskExecutor);
     }
 
     public void moveToDirectoryAndRename(Path destinationDirectory) {
         if (!isInCurrentDirectory(destinationDirectory)) {
-            moveToDirectory(destinationDirectory);
+            moveToDirectory(destinationDirectory, this::renameToSuggestion);
+            return;
         }
         renameToSuggestion();
     }
